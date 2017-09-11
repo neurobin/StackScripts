@@ -82,7 +82,6 @@ update_command=('false' 'apt update; apt upgrade' 'apt-get update; apt-get upgra
 fail2ban_packs=('false' 'fail2ban sendmail-bin sendmail' 'fail2ban sendmail-bin sendmail' 'epel-release fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail')
 
 get_os_index(){
-    # System upgrade
     if chkcmd apt; then
         # Debian-apt
         echo 1
@@ -114,10 +113,12 @@ get_os_index(){
 ################################################################################
 
 system_update(){
+    # upgrade the system
     ${update_command[$(get_os_index)]}
 }
 
 system_get_install_command(){
+    # get package manager install command
     echo "${install_command[$(get_os_index)]}"
 }
 
@@ -138,6 +139,8 @@ system_get_rdns(){
 
 # compatibility with linode bash lib
 get_rdns(){
+    # calls host on an IP address and returns its reverse dns
+    # $1 - Required - ip address
     system_get_rdns ${1:+"$@"}
 }
 
@@ -149,6 +152,8 @@ system_get_rdns_primary_ip() {
 
 # compatibility with linode bash lib
 get_rdns_primary_ip(){
+    # returns the reverse dns of the primary IP assigned to this system
+    # $1 - Required - Network interface, default: eth0
     system_get_rdns_primary_ip ${1:+"$@"}
 }
 
@@ -182,7 +187,6 @@ system_set_hostname() {
     else
         return 1
     fi
-    
 }
 
 system_add_host_entry(){
@@ -240,8 +244,8 @@ ssh_user_add_pubkey(){
     
     mkdir -p /home/$USERNAME/.ssh
     if echo "$USERPUBKEY" >> /home/$USERNAME/.ssh/authorized_keys; then
-        msg_out "Added pubkey to /home/$USERNAME/.ssh/authorized_keys"
         chown -R "$USERNAME":"$USERNAME" /home/$USERNAME/.ssh
+        msg_out "Added pubkey to /home/$USERNAME/.ssh/authorized_keys"
         return 0
     else
         err_out "Failed to add pubkey to /home/$USERNAME/.ssh/authorized_keys"
@@ -249,22 +253,13 @@ ssh_user_add_pubkey(){
     fi
 }
 
-# compatibility with linode bash lib
-user_add_pubkey(){
-    if ssh_user_add_pubkey ${1:+"$@"}; then
-        return 0
-    else
-        return 1
-    fi
-}
-
 ssh_disable_root(){
     # Disables root SSH access.
     if sed -i'.bak' 's/PermitRootLogin[[:blank:]][[:blank:]]*yes/PermitRootLogin no/' /etc/ssh/sshd_config; then
-        msg_out "Disabled root login using SSH"
+        msg_out "Disabled root login in SSH"
         return 0
     else
-        err_out "Failed to disable root login using SSH"
+        err_out "Failed to disable root login in SSH"
         return 1
     fi
 }
@@ -279,6 +274,30 @@ ssh_restrict_address_family(){
         return 1
     fi
 }
+
+################
+### Fail2Ban ###
+################
+
+fail2ban_restart(){
+    systemctl restart fail2ban || service fail2ban restart
+    systemctl restart sendmail || service sendmail restart
+}
+
+fail2ban_start(){
+    systemctl start fail2ban || service fail2ban start
+    systemctl enable fail2ban
+    systemctl start sendmail || service sendmail start
+    systemctl enable sendmail
+}
+
+fail2ban_install(){
+    system_update
+    $(system_get_install_command) ${fail2ban_packs[$(get_os_index)]}
+    mkdir -p /var/run/fail2ban
+    fail2ban_start
+}
+
 
 ################################################################################
 # Users and Authentication
@@ -339,4 +358,18 @@ user_add_sudo(){
         err_out "Failed to enable group sudo in $sudoers"
     fi
 }
+
+
+
+# compatibility with linode bash lib
+user_add_pubkey(){
+    # Adds the users public key to authorized_keys for the specified user.
+    # Make sure you wrap your input variables in double quotes, or the key may not load properly.
+    #
+    #
+    # $1 - Required - username
+    # $2 - Required - public key
+    ssh_user_add_pubkey ${1:+"$@"}
+}
+
 
