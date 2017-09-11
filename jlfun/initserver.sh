@@ -14,6 +14,7 @@
 # <UDF name="sendmail_install" Label="Install sendmail" oneOf="yes,no" default="yes" />
 # <UDF name="apache2_install" Label="Install apache2 webserver" oneOf="yes,no" default="yes" />
 # <UDF name="mysql_install" Label="Install mysql" oneOf="yes,no" default="yes" />
+# <UDF name="mysql_root_password" Label="Root password for mysql" />
 
 source <ssinclude StackScriptID="182722">
 
@@ -58,6 +59,6 @@ if [[ "$APACHE2_INSTALL" = yes ]]; then
 fi
 
 if [[ "$MYSQL_INSTALL" = yes ]]; then
-    mysql_install
+    mysql_install "$MYSQL_ROOT_PASSWORD"
     mysql_tune_with_defaults
 fi

@@ -421,8 +421,9 @@ ufw_install(){
         ufw_allow_commons
         ufw default deny incoming
         ufw default allow outgoing
-        ufw_allow_commons
         ufw_start
+    else
+        return 1
     fi
 }
 
@@ -479,14 +480,14 @@ sendmail_restart(){
 sendmail_install(){
     # * Install and start **sendmail** service
     $(system_get_install_command) ${sendmail_packs[$(_get_os_index)]}
-    sendmail_start
-    #To enable sendmail to use STARTTLS, you need to:
-    #1) Add this line to /etc/mail/sendmail.mc and optionally
-    #   to /etc/mail/submit.mc:
-    #  include(`/etc/mail/tls/starttls.m4')dnl
-    #2) Run sendmailconfig
-    #3) Restart sendmail
-
+    if chkcmd sendmail; then
+        sendmail_start
+        echo "include(\`/etc/mail/tls/starttls.m4')dnl" | tee -a /etc/mail/sendmail.mc /etc/mail/submit.mc
+        yes | sendmailconfig
+        sendmail_restart
+    else
+        return 1
+    fi
 }
 
 
@@ -510,15 +511,18 @@ apache2_restart(){
 apache2_install() {
     # * installs the system default **apache2**
     $(system_get_install_command) apache2
+    if chkcmd a2dissite; then
+        a2dissite default # disable the interfering default virtualhost
 
-    a2dissite default # disable the interfering default virtualhost
-
-    # clean up, or add the NameVirtualHost line to ports.conf
-    sed -i -e 's/^NameVirtualHost \*$/NameVirtualHost *:80/' /etc/apache2/ports.conf
-    if ! grep -q NameVirtualHost /etc/apache2/ports.conf; then
-        echo 'NameVirtualHost *:80' > /etc/apache2/ports.conf.tmp
-        cat /etc/apache2/ports.conf >> /etc/apache2/ports.conf.tmp
-        mv -f /etc/apache2/ports.conf.tmp /etc/apache2/ports.conf
+        # clean up, or add the NameVirtualHost line to ports.conf
+        sed -i -e 's/^NameVirtualHost \*$/NameVirtualHost *:80/' /etc/apache2/ports.conf
+        if ! grep -q NameVirtualHost /etc/apache2/ports.conf; then
+            echo 'NameVirtualHost *:80' > /etc/apache2/ports.conf.tmp
+            cat /etc/apache2/ports.conf >> /etc/apache2/ports.conf.tmp
+            mv -f /etc/apache2/ports.conf.tmp /etc/apache2/ports.conf
+        fi
+    else
+        return 1
     fi
 }
 
@@ -593,27 +597,31 @@ mysql_install(){
     echo "mysql-server mysql-server/root_password password $1" | debconf-set-selections
     echo "mysql-server mysql-server/root_password_again password $1" | debconf-set-selections
     $(system_get_install_command) mysql-server mysql-client
-
-    msg_out "Sleeping while MySQL starts up for the first time..."
-    sleep 3
     
-    # securing mysql
-    if ! chkcmd expect; then
-        $(system_get_install_command) expect
-    fi
-    msg_out "Securing mysql with mysql_secure_installation"
-    expect -c '
-        set timeout -1
-        spawn -noecho mysql_secure_installation --use-default
-        while {1} {
-            expect {
-                timeout { exp_send_user "\nE: Failed!!!. Timed out.\n"; exit 1}
-                eof {break}
-                -nocase "*assword*" {
-                    exp_send "'"$1"'\r"
+    if chkcmd mysql; then
+        msg_out "Sleeping while MySQL starts up for the first time..."
+        sleep 3
+        
+        # securing mysql
+        if ! chkcmd expect; then
+            $(system_get_install_command) expect
+        fi
+        msg_out "Securing mysql with mysql_secure_installation"
+        expect -c '
+            set timeout -1
+            spawn -noecho mysql_secure_installation --use-default
+            while {1} {
+                expect {
+                    timeout { exp_send_user "\nE: Failed!!!. Timed out.\n"; exit 1}
+                    eof {break}
+                    -nocase "*assword*" {
+                        exp_send "'"$1"'\r"
+                    }
                 }
-            }
-        }'
+            }'
+    else
+        return 1
+    fi
 }
 
 
