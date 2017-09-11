@@ -37,9 +37,9 @@
 
 ################################## HELP ########################################
 # Environment Variable  Description
-# LINODE_ID             The Linode’s ID number (123456)
-# LINODE_LISHUSERNAME   The Linode’s full lish-accessible name (linode123456)
-# LINODE_RAM            The RAM available on this Linode’s plan (1024)
+# LINODE_ID             The Linode's ID number (123456)
+# LINODE_LISHUSERNAME   The Linode's full lish-accessible name (linode123456)
+# LINODE_RAM            The RAM available on this Linode's plan (1024)
 # LINODE_DATACENTERID   The ID number of the data center containing the Linode (6)
 ################################################################################
 
@@ -538,7 +538,7 @@ apache2_tune_with_defaults(){
         msg_out "Apache2 tuning successfull"
         return 0
     else
-        err_out "Apache2 tuning failed!!!"
+        err_out 'Apache2 tuning failed!!!'
         return 1
     fi
 }
