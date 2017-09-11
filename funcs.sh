@@ -195,7 +195,7 @@ system_add_host_entry(){
     IPADDR="$1"
     FQDN="$2"
 
-    if [ -z "$IPADDR" -o -z "$FQDN" ]; then
+    if [ -z "$IPADDR" ] || [ -z "$FQDN" ]; then
         err_out "IP address and/or FQDN Undefined"
         return 1;
     fi
