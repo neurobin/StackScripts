@@ -108,7 +108,7 @@ chkcmd(){
 
 oss=(Unknown Debian Centos Fedora Archlinux Gentoo Slackware)
 install_command=('false' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S' 'emerge' 'slackpkg install')
-update_command=('false''apt-get update
+update_command=('false' 'apt-get update
 apt-get upgrade -y' 'yum -y update' 'dnf -y upgrade' 'pacman -Syu' 'emaint sync
 emerge --uDN @world' 'slackpkg update
 slackpkg upgrade-all')
