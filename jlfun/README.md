@@ -168,7 +168,7 @@ The available functions are:
 ## apache2_tune
 
 * Tunes Apache's memory to use the percentage of RAM you specify, defaulting to 40%
-* $1 - the percent of system memory to allocate towards Apache
+* `$1` - the percent of system memory to allocate towards Apache
 
 ## apache2_tune_with_defaults
 
