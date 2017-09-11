@@ -75,6 +75,13 @@ The available functions are:
 * `$1` - Required - The IP address to set a hosts entry for
 * `$2` - Required - The FQDN to set to the IP
 
+## user_add_with_sudo
+
+* Installs sudo if needed and creates a user in the sudo group.
+* `$1` - Required - username
+* `$2` - Required - password
+* `$3` - Optional - shell
+
 ## ssh_start
 
 * start ssh service
@@ -125,13 +132,6 @@ The available functions are:
 ## ufw_install
 
 * install **ufw** (debian, ubuntu, and archlinux)
-
-## user_add_with_sudo
-
-* Installs sudo if needed and creates a user in the sudo group.
-* `$1` - Required - username
-* `$2` - Required - password
-* `$3` - Optional - shell
 
 ## common_install
 
