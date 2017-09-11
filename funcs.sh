@@ -3,9 +3,6 @@
 # ############################### funcs.sh #####################################
 # ##############################################################################
 #
-# Copyright (c) 2010 Linode LLC / Christopher S. Aker <caker@linode.com>
-# All rights reserved.
-#
 # Copyright (c) 2015-2017 Md. Jahidul Hamid. All rights reserved.
 # 
 # -----------------------------------------------------------------------------
@@ -130,7 +127,7 @@ system_primary_ip() {
     echo "$(ifconfig "${1:-eth0}" | awk -F: '/inet addr:/ {print $2}' | awk '{ print $1 }')"
 }
 
-get_rdns(){
+system_get_rdns(){
     # calls host on an IP address and returns its reverse dns
     # $1 - Required - ip address
     if ! chkcmd host; then
@@ -139,12 +136,21 @@ get_rdns(){
     echo "$(host "$1" | awk '/pointer/ {print $5}' | sed 's/\.$//')"
 }
 
-get_rdns_primary_ip() {
-    # returns the reverse dns of the primary IP assigned to this system
-    # $1 - Required - Network interface, default: eth0
-    echo "$(get_rdns "$(system_primary_ip "$1")")"
+# compatibility with linode bash lib
+get_rdns(){
+    system_get_rdns ${1:+"$@"}
 }
 
+system_get_rdns_primary_ip() {
+    # returns the reverse dns of the primary IP assigned to this system
+    # $1 - Required - Network interface, default: eth0
+    echo "$(system_get_rdns "$(system_primary_ip "$1")")"
+}
+
+# compatibility with linode bash lib
+get_rdns_primary_ip(){
+    system_get_rdns_primary_ip ${1:+"$@"}
+}
 
 system_set_hostname() {
     # $1 - Required - The hostname to define
@@ -173,6 +179,8 @@ system_set_hostname() {
         # Gentoo
         echo "HOSTNAME=\"$HOSTNAME\"" > /etc/conf.d/hostname
         /etc/init.d/hostname restart
+    else
+        return 1
     fi
     
 }
@@ -221,29 +229,55 @@ ssh_user_add_pubkey(){
     
     if [ "$USERNAME" == "root" ]; then
         mkdir /root/.ssh
-        echo "$USERPUBKEY" >> /root/.ssh/authorized_keys
-        return 0
+        if echo "$USERPUBKEY" >> /root/.ssh/authorized_keys; then
+            msg_out "Added pubkey to /root/.ssh/authorized_keys"
+            return 0
+        else
+            err_out "Failed to add pubkey to /root/.ssh/authorized_keys"
+            return 1
+        fi
     fi
     
     mkdir -p /home/$USERNAME/.ssh
-    echo "$USERPUBKEY" >> /home/$USERNAME/.ssh/authorized_keys
-    chown -R "$USERNAME":"$USERNAME" /home/$USERNAME/.ssh
+    if echo "$USERPUBKEY" >> /home/$USERNAME/.ssh/authorized_keys; then
+        msg_out "Added pubkey to /home/$USERNAME/.ssh/authorized_keys"
+        chown -R "$USERNAME":"$USERNAME" /home/$USERNAME/.ssh
+        return 0
+    else
+        err_out "Failed to add pubkey to /home/$USERNAME/.ssh/authorized_keys"
+        return 1
+    fi
 }
 
 # compatibility with linode bash lib
 user_add_pubkey(){
-    ssh_user_add_pubkey ${1:+"$@"}
+    if ssh_user_add_pubkey ${1:+"$@"}; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 ssh_disable_root(){
     # Disables root SSH access.
-    sed -i'.bak' 's/PermitRootLogin[[:blank:]][[:blank:]]*yes/PermitRootLogin no/' /etc/ssh/sshd_config
-    touch /tmp/restart-ssh
+    if sed -i'.bak' 's/PermitRootLogin[[:blank:]][[:blank:]]*yes/PermitRootLogin no/' /etc/ssh/sshd_config; then
+        msg_out "Disabled root login using SSH"
+        return 0
+    else
+        err_out "Failed to disable root login using SSH"
+        return 1
+    fi
 }
 
 ssh_restrict_address_family(){
     # $1 - Required - Address family, inet for IPV4 and inet6 of IPV6
-    echo "AddressFamily $1" | sudo tee -a /etc/ssh/sshd_config
+    if echo "AddressFamily $1" | sudo tee -a /etc/ssh/sshd_config; then
+        msg_out "Added 'AddressFamily $1' to /etc/ssh/sshd_config"
+        return 0
+    else
+        err_out "Failed to add AddressFamily $1' to /etc/ssh/sshd_config"
+        return 1
+    fi
 }
 
 ################################################################################
@@ -272,19 +306,34 @@ user_add_sudo(){
     
     $(system_get_install_command) sudo
     $(system_get_install_command) adduser
+    
     #adduser "$USERNAME" --disabled-password --gecos ""
-    useradd -m "$USERNAME" $usermod_opts
-    echo "$USERNAME:$USERPASS" | chpasswd
+    useradd -m "$USERNAME" $usermod_opts &&
+    msg_out "Added user $USERNAME" ||
+    err_out "Failed to add user $USERNAME"
+    
+    echo "$USERNAME:$USERPASS" | chpasswd &&
+    msg_out "Updated password for $USERNAME" ||
+    err_out "Failed to update password for $USERNAME"
+    
     sudoers=/etc/sudoers
     if [[ "${oss[$(get_os_index)]}" = Centos ]] || [[ "${oss[$(get_os_index)]}" = Fedora ]]; then
         groupadd wheel
-        usermod -aG wheel "$USERNAME"
+        
+        usermod -aG wheel "$USERNAME" &&
+        msg_out "Added $USERNAME to group 'wheel'" ||
+        err_out "Failed to add $USERNAME to group 'wheel'"
+        
         sed -i'.bak' -e 's/^[[:blank:]]*#*[[:blank:]]*\(%wheel[[:blank:]][[:blank:]]*ALL=(ALL).*\)/\1/' "$sudoers" &&
         msg_out "Enabled group wheel in $sudoers" ||
         err_out "Failed to enable group wheel in $sudoers"
     else
         groupadd sudo
-        usermod -aG sudo "$USERNAME"
+        
+        usermod -aG sudo "$USERNAME" &&
+        msg_out "Added $USERNAME to group 'sudo'" ||
+        err_out "Failed to add $USERNAME to group 'sudo'"
+        
         sed -i'.bak' -e 's/^[[:blank:]]*#*[[:blank:]]*\(%sudo[[:blank:]][[:blank:]]*ALL=(ALL).*\)/\1/' "$sudoers" &&
         msg_out "Enabled group sudo in $sudoers" ||
         err_out "Failed to enable group sudo in $sudoers"
