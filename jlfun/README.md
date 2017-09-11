@@ -45,6 +45,11 @@ The available functions are:
 
 ## system_update
 
+* update the system
+* some os may perform total upgrade like archlinux, centos, fedora
+
+## system_upgrade
+
 * upgrade the system
 
 ## system_get_install_command

@@ -20,7 +20,7 @@ source <ssinclude StackScriptID="182722">
 mkdir -p /var/cache
 exec &> /var/cache/initserver.sh.log
 
-system_update
+system_upgrade
 system_set_hostname "$SYSTEM_HOSTNAME"
 system_add_host_entry 127.0.1.1 "$SYSTEM_HOSTNAME"
 user_add_with_sudo "$USER_NAME" "$USER_PASSWORD"
