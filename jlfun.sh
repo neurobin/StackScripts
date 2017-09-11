@@ -1,6 +1,6 @@
 #!/bin/bash
 # ##############################################################################
-# ############################### funcs.sh #####################################
+# ################################# JLFUN ######################################
 # ##############################################################################
 #
 # Copyright (c) 2017 Md. Jahidul Hamid. All rights reserved.
@@ -48,23 +48,37 @@
 ################################################################################
 
 msg_out(){
+    # Print message with backslash interpretation prepending with '*** '
+    # Prints on stdout
+    # All arguments are printed as a single space separated string.
 	printf '\n%b\n' "*** $*"
 }
 
 err_out(){
+    # Print error message with backslash interpretation prepending with 'E: '
+    # Prints on stderr
+    # All arguments are printed as a single space separated string.
 	printf '\n%b\n' "E: $*" >&2
 }
 
 wrn_out(){
+    # Print warning message with backslash interpretation prepending with 'W: '
+    # Prints on stderr
+    # All arguments are printed as a single space separated string.
 	printf '\n%b\n' "W: $*" >&2
 }
 
 err_exit(){
+    # Print error with err_out() and exit with 1 exit status
+    # Print error message with backslash interpretation prepending with 'E: '
+    # Prints on stderr
+    # All arguments are printed as a single space separated string.
 	err_out "$*"
 	exit 1
 }
 
 print_linode_info(){
+    # Show linode info
     echo "
     Linode ID:              $LINODE_ID
     Linode data center ID:  $LINODE_DATACENTERID
@@ -96,6 +110,7 @@ oss=(Unknown Debian Debian Centos Fedora Archlinux Gentoo Slackware)
 install_command=('false' 'apt install -y' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S' 'emerge' 'slackpkg install')
 update_command=('false' 'apt update; apt upgrade' 'apt-get update; apt-get upgrade' 'yum update' 'dnf upgrade' 'pacman -Syu' 'emaint sync; emerge --uDN @world' 'slackpkg update; slackpkg upgrade-all')
 fail2ban_packs=('false' 'fail2ban sendmail-bin sendmail' 'fail2ban sendmail-bin sendmail' 'epel-release fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail')
+sendmail_packs=('false' 'sendmail-bin sendmail' 'sendmail-bin sendmail' 'epel-release sendmail' 'sendmail' 'sendmail' 'sendmail' 'sendmail')
 
 _get_os_index(){
     if chkcmd apt; then
@@ -138,7 +153,7 @@ system_get_install_command(){
     echo "${install_command[$(_get_os_index)]}"
 }
 
-system_primary_ip() {
+system_get_primary_ip() {
     # returns the primary IP assigned to a network interface
     # $1 - Required - network interface, default: eth0
     echo "$(ifconfig "${1:-eth0}" | awk -F: '/inet addr:/ {print $2}' | awk '{ print $1 }')"
@@ -362,14 +377,14 @@ user_add_with_sudo(){
     fi
     
     if [[ "$USERSHELL" != '' ]]; then
-        usermod_opts="-s '$USERSHELL'"
+        usermod_opts=(-s "$USERSHELL")
     fi
     
     $(system_get_install_command) sudo
     $(system_get_install_command) adduser
     
     #adduser "$USERNAME" --disabled-password --gecos ""
-    useradd -m "$USERNAME" $usermod_opts &&
+    useradd -m "$USERNAME" "${usermod_opts[@]}" &&
     msg_out "Added user $USERNAME" ||
     err_out "Failed to add user $USERNAME"
     
@@ -413,7 +428,7 @@ user_add_with_sudo(){
 common_install(){
     # Install some common packages: git, wget, bc, tar, gzip, lzip inxi
     packs=(git wget bc tar gzip lzip inxi)
-    for pack in ${packs[@]}; do
+    for pack in "${packs[@]}"; do
         if $(system_get_install_command) $pack; then
             msg_out "Successfully installed '$pack'"
         else
@@ -463,6 +478,13 @@ sendmail_install(){
 ### Apache2 ###
 ###############
 
+
+apache2_start(){
+    # start apache2
+    systemctl start apache2 ||
+    service apache2 start
+}
+
 apache2_restart(){
     # restart apache2
     systemctl restart apache2 ||
@@ -503,18 +525,13 @@ apache2_tune(){
 apache2_tune_with_defaults(){
     # Tune apache2 according to linode ram size
     msg_out "Tuning apache2 for LINODE_RAM=$LINODE_RAM"
-    StartServers=2
-    MinSpareServers=10
-    MaxSpareServers=20
-    MaxClients=100
-    MaxRequestsPerChild=2250
     content="
     <IfModule mpm_prefork_module>
-        StartServers $((StartServers*(LINODE_RAM/1024)))
-        MinSpareServers $((MinSpareServers*(LINODE_RAM/1024)))
-        MaxSpareServers $((MaxSpareServers*(LINODE_RAM/1024)))
-        MaxClients $((MaxClients*(LINODE_RAM/1024)))
-        MaxRequestsPerChild $((MaxRequestsPerChild*(LINODE_RAM/1024)))
+        StartServers $((2*(LINODE_RAM/1024)))
+        MinSpareServers $((10*(LINODE_RAM/1024)))
+        MaxSpareServers $((20*(LINODE_RAM/1024)))
+        MaxClients $((100*(LINODE_RAM/1024)))
+        MaxRequestsPerChild $((2250*(LINODE_RAM/1024)))
     </IfModule>
     "
     if echo "$content" | tee -a /etc/apache2/apache2.conf; then
@@ -530,6 +547,18 @@ apache2_tune_with_defaults(){
 ###########################################################
 # mysql
 ###########################################################
+
+mysql_start(){
+    # start mysql service
+    systemctl start mysql ||
+    service mysql start
+}
+
+mysql_restart(){
+    # restart mysql service
+    systemctl restart mysql ||
+    service mysql restart
+}
 
 mysql_install(){
     # Install and secure mysql (Debian/Ubuntu)
@@ -550,7 +579,7 @@ mysql_install(){
     $(system_get_install_command) mysql-server mysql-client
 
     msg_out "Sleeping while MySQL starts up for the first time..."
-    sleep 5
+    sleep 3
     
     # securing mysql
     if ! chkcmd expect; then
@@ -611,7 +640,7 @@ mysql_tune(){
     OPTLIST=(key_buffer sort_buffer_size read_buffer_size read_rnd_buffer_size myisam_sort_buffer_size query_cache_size)
     DISTLIST=(75 1 1 1 5 15)
 
-    for opt in ${OPTLIST[@]}; do
+    for opt in "${OPTLIST[@]}"; do
         sed -i -e "/\[mysqld\]/,/\[.*\]/s/^$opt/#$opt/" /etc/mysql/my.cnf
     done
 
