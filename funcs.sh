@@ -2,7 +2,11 @@
 # ##############################################################################
 # ############################### funcs.sh #####################################
 # ##############################################################################
-#            Copyright (c) 2015-2017 Md. Jahidul Hamid
+#
+# Copyright (c) 2010 Linode LLC / Christopher S. Aker <caker@linode.com>
+# All rights reserved.
+#
+# Copyright (c) 2015-2017 Md. Jahidul Hamid. All rights reserved.
 # 
 # -----------------------------------------------------------------------------
 # Redistribution and use in source and binary forms, with or without
@@ -63,7 +67,7 @@ err_exit(){
 
 chkcmd(){
     # Check if a command is available
-    # $1: command
+    # $1 - Required - command
     if command -v "$1" >/dev/null 2>&1; then
         return 0
     else
@@ -71,58 +75,79 @@ chkcmd(){
     fi
 }
 
+################################################################################
+# Compatibility layer
+################################################################################
+
+oss=(Unknown Debian-apt Debian-apt-get Centos Fedora Archlinux Gentoo Slackware)
+install_command=('false' 'apt install -y' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S' 'emerge' 'slackpkg install')
+update_command=('false' 'apt update; apt upgrade' 'apt-get update; apt-get upgrade' 'yum update' 'dnf upgrade' 'pacman -Syu' 'emaint sync; emerge --uDN @world' 'slackpkg update; slackpkg upgrade-all')
+fail2ban_packs=('false' 'fail2ban sendmail-bin sendmail' 'fail2ban sendmail-bin sendmail' 'epel-release fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail')
+
+get_os_index(){
+    # System upgrade
+    if chkcmd apt; then
+        # Debian-apt
+        echo 1
+    elif chkcmd apt-get; then
+        # Debian-apt-get
+        echo 2
+    elif chkcmd yum; then
+        # Centos
+        echo 3
+    elif chkcmd dnf; then
+        # Fedora
+        echo 4
+    elif chkcmd pacman; then
+        # Archlinux
+        echo 5
+    elif chkcmd emaint; then
+        # Gentoo
+        echo 6
+    elif chkcmd slackpkg; then
+        # Slackware
+        echo 7
+    else
+        echo 0
+    fi
+}
 
 ################################################################################
 # System utils
 ################################################################################
 
 system_update(){
-    # System upgrade
-    if chkcmd apt; then
-        apt update
-        apt upgrade
-    elif chkcmd apt-get; then
-        apt-get update
-        apt-get upgrade
-    elif chkcmd yum; then
-        yum update
-    elif chkcmd dnf; then
-        dnf upgrade
-    elif chkcmd pacman; then
-        pacman -Syu
-    elif chkcmd emaint; then
-        emaint sync
-        emerge --uDN @world
-    elif chkcmd slackpkg; then
-        slackpkg update
-        slackpkg upgrade-all
-    fi
+    ${update_command[$(get_os_index)]}
+}
+
+system_get_install_command(){
+    echo "${install_command[$(get_os_index)]}"
 }
 
 system_primary_ip() {
     # returns the primary IP assigned to a network interface
-    # $1: network interface, default: eth0
+    # $1 - Required - network interface, default: eth0
     echo "$(ifconfig "${1:-eth0}" | awk -F: '/inet addr:/ {print $2}' | awk '{ print $1 }')"
 }
 
 get_rdns(){
     # calls host on an IP address and returns its reverse dns
-    # $1: ip address
+    # $1 - Required - ip address
     if ! chkcmd host; then
-        apt-get install -y dnsutils > /dev/null 2>&1
+        $(system_get_install_command) dnsutils > /dev/null 2>&1
     fi
     echo "$(host "$1" | awk '/pointer/ {print $5}' | sed 's/\.$//')"
 }
 
 get_rdns_primary_ip() {
     # returns the reverse dns of the primary IP assigned to this system
-    # $1: network interface, default: eth0
+    # $1 - Required - Network interface, default: eth0
     echo "$(get_rdns "$(system_primary_ip "$1")")"
 }
 
 
 system_set_hostname() {
-    # $1 - The hostname to define
+    # $1 - Required - The hostname to define
     HOSTNAME="$1"
         
     if [ ! -n "$HOSTNAME" ]; then
@@ -152,9 +177,9 @@ system_set_hostname() {
     
 }
 
-function system_add_host_entry {
-    # $1 - The IP address to set a hosts entry for
-    # $2 - The FQDN to set to the IP
+system_add_host_entry(){
+    # $1 - Required - The IP address to set a hosts entry for
+    # $2 - Required - The FQDN to set to the IP
     IPADDR="$1"
     FQDN="$2"
 
@@ -165,3 +190,104 @@ function system_add_host_entry {
     
     echo "$IPADDR" "$FQDN"  >> /etc/hosts
 }
+
+################################################################################
+# Security
+################################################################################
+
+###########
+### SSH ###
+###########
+
+ssh_restart(){
+    systemctl restart sshd ||
+    service ssh restart
+}
+
+ssh_user_add_pubkey(){
+    # Adds the users public key to authorized_keys for the specified user.
+    # Make sure you wrap your input variables in double quotes, or the key may not load properly.
+    #
+    #
+    # $1 - Required - username
+    # $2 - Required - public key
+    USERNAME="$1"
+    USERPUBKEY="$2"
+    
+    if [ ! -n "$USERNAME" ] || [ ! -n "$USERPUBKEY" ]; then
+        err_out "Must provide a username and the location of a pubkey"
+        return 1;
+    fi
+    
+    if [ "$USERNAME" == "root" ]; then
+        mkdir /root/.ssh
+        echo "$USERPUBKEY" >> /root/.ssh/authorized_keys
+        return 0
+    fi
+    
+    mkdir -p /home/$USERNAME/.ssh
+    echo "$USERPUBKEY" >> /home/$USERNAME/.ssh/authorized_keys
+    chown -R "$USERNAME":"$USERNAME" /home/$USERNAME/.ssh
+}
+
+# compatibility with linode bash lib
+user_add_pubkey(){
+    ssh_user_add_pubkey ${1:+"$@"}
+}
+
+ssh_disable_root(){
+    # Disables root SSH access.
+    sed -i'.bak' 's/PermitRootLogin[[:blank:]][[:blank:]]*yes/PermitRootLogin no/' /etc/ssh/sshd_config
+    touch /tmp/restart-ssh
+}
+
+ssh_restrict_address_family(){
+    # $1 - Required - Address family, inet for IPV4 and inet6 of IPV6
+    echo "AddressFamily $1" | sudo tee -a /etc/ssh/sshd_config
+}
+
+################################################################################
+# Users and Authentication
+################################################################################
+
+
+user_add_sudo(){
+    # Installs sudo if needed and creates a user in the sudo group.
+    #
+    # $1 - Required - username
+    # $2 - Required - password
+    # $3 - Optional - shell
+    USERNAME="$1"
+    USERPASS="$2"
+    USERSHELL="$3"
+
+    if [ ! -n "$USERNAME" ] || [ ! -n "$USERPASS" ]; then
+        err_out "No new username and/or password entered"
+        return 1;
+    fi
+    
+    if [[ "$USERSHELL" != '' ]]; then
+        usermod_opts="-s '$USERSHELL'"
+    fi
+    
+    $(system_get_install_command) sudo
+    $(system_get_install_command) adduser
+    #adduser "$USERNAME" --disabled-password --gecos ""
+    useradd -m "$USERNAME" $usermod_opts
+    echo "$USERNAME:$USERPASS" | chpasswd
+    sudoers=/etc/sudoers
+    if [[ "${oss[$(get_os_index)]}" = Centos ]] || [[ "${oss[$(get_os_index)]}" = Fedora ]]; then
+        groupadd wheel
+        usermod -aG wheel "$USERNAME"
+        sed -i'.bak' -e 's/^[[:blank:]]*#*[[:blank:]]*\(%wheel[[:blank:]][[:blank:]]*ALL=(ALL).*\)/\1/' "$sudoers" &&
+        msg_out "Enabled group wheel in $sudoers" ||
+        err_out "Failed to enable group wheel in $sudoers"
+    else
+        groupadd sudo
+        usermod -aG sudo "$USERNAME"
+        sed -i'.bak' -e 's/^[[:blank:]]*#*[[:blank:]]*\(%sudo[[:blank:]][[:blank:]]*ALL=(ALL).*\)/\1/' "$sudoers" &&
+        msg_out "Enabled group sudo in $sudoers" ||
+        err_out "Failed to enable group sudo in $sudoers"
+    fi
+}
+
