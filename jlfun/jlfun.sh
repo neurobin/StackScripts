@@ -220,6 +220,69 @@ system_add_host_entry(){
     echo "$IPADDR" "$FQDN"  >> /etc/hosts
 }
 
+
+################################################################################
+# Users and Authentication
+################################################################################
+
+
+user_add_with_sudo(){
+    # * Installs sudo if needed and creates a user in the sudo group.
+    #
+    # * `$1` - Required - username
+    # * `$2` - Required - password
+    # * `$3` - Optional - shell
+    USERNAME="$1"
+    USERPASS="$2"
+    USERSHELL="$3"
+
+    if [ ! -n "$USERNAME" ] || [ ! -n "$USERPASS" ]; then
+        err_out "No new username and/or password entered"
+        return 1;
+    fi
+    
+    if [[ "$USERSHELL" != '' ]]; then
+        usermod_opts=(-s "$USERSHELL")
+        $(system_get_install_command) "$USERSHELL"
+    fi
+    
+    $(system_get_install_command) sudo
+    $(system_get_install_command) adduser
+    
+    #adduser "$USERNAME" --disabled-password --gecos ""
+    useradd -m "$USERNAME" "${usermod_opts[@]}" &&
+    msg_out "Added user $USERNAME" ||
+    err_out "Failed to add user $USERNAME"
+    
+    echo "$USERNAME:$USERPASS" | chpasswd &&
+    msg_out "Updated password for $USERNAME" ||
+    err_out "Failed to update password for $USERNAME"
+    
+    sudoers=/etc/sudoers
+    if [[ "${oss[$(_get_os_index)]}" = Centos ]] || [[ "${oss[$(_get_os_index)]}" = Fedora ]]; then
+        groupadd wheel
+        
+        usermod -aG wheel "$USERNAME" &&
+        msg_out "Added $USERNAME to group 'wheel'" ||
+        err_out "Failed to add $USERNAME to group 'wheel'"
+        
+        sed -i'.bak' -e 's/^[[:blank:]]*#*[[:blank:]]*\(%wheel[[:blank:]][[:blank:]]*ALL=(ALL).*\)/\1/' "$sudoers" &&
+        msg_out "Enabled group wheel in $sudoers" ||
+        err_out "Failed to enable group wheel in $sudoers"
+    else
+        groupadd sudo
+        
+        usermod -aG sudo "$USERNAME" &&
+        msg_out "Added $USERNAME to group 'sudo'" ||
+        err_out "Failed to add $USERNAME to group 'sudo'"
+        
+        sed -i'.bak' -e 's/^[[:blank:]]*#*[[:blank:]]*\(%sudo[[:blank:]][[:blank:]]*ALL=(ALL).*\)/\1/' "$sudoers" &&
+        msg_out "Enabled group sudo in $sudoers" ||
+        err_out "Failed to enable group sudo in $sudoers"
+    fi
+}
+
+
 ################################################################################
 # Security
 ################################################################################
@@ -362,67 +425,6 @@ ufw_install(){
         ufw_start
     fi
 }
-
-################################################################################
-# Users and Authentication
-################################################################################
-
-
-user_add_with_sudo(){
-    # * Installs sudo if needed and creates a user in the sudo group.
-    #
-    # * `$1` - Required - username
-    # * `$2` - Required - password
-    # * `$3` - Optional - shell
-    USERNAME="$1"
-    USERPASS="$2"
-    USERSHELL="$3"
-
-    if [ ! -n "$USERNAME" ] || [ ! -n "$USERPASS" ]; then
-        err_out "No new username and/or password entered"
-        return 1;
-    fi
-    
-    if [[ "$USERSHELL" != '' ]]; then
-        usermod_opts=(-s "$USERSHELL")
-    fi
-    
-    $(system_get_install_command) sudo
-    $(system_get_install_command) adduser
-    
-    #adduser "$USERNAME" --disabled-password --gecos ""
-    useradd -m "$USERNAME" "${usermod_opts[@]}" &&
-    msg_out "Added user $USERNAME" ||
-    err_out "Failed to add user $USERNAME"
-    
-    echo "$USERNAME:$USERPASS" | chpasswd &&
-    msg_out "Updated password for $USERNAME" ||
-    err_out "Failed to update password for $USERNAME"
-    
-    sudoers=/etc/sudoers
-    if [[ "${oss[$(_get_os_index)]}" = Centos ]] || [[ "${oss[$(_get_os_index)]}" = Fedora ]]; then
-        groupadd wheel
-        
-        usermod -aG wheel "$USERNAME" &&
-        msg_out "Added $USERNAME to group 'wheel'" ||
-        err_out "Failed to add $USERNAME to group 'wheel'"
-        
-        sed -i'.bak' -e 's/^[[:blank:]]*#*[[:blank:]]*\(%wheel[[:blank:]][[:blank:]]*ALL=(ALL).*\)/\1/' "$sudoers" &&
-        msg_out "Enabled group wheel in $sudoers" ||
-        err_out "Failed to enable group wheel in $sudoers"
-    else
-        groupadd sudo
-        
-        usermod -aG sudo "$USERNAME" &&
-        msg_out "Added $USERNAME to group 'sudo'" ||
-        err_out "Failed to add $USERNAME to group 'sudo'"
-        
-        sed -i'.bak' -e 's/^[[:blank:]]*#*[[:blank:]]*\(%sudo[[:blank:]][[:blank:]]*ALL=(ALL).*\)/\1/' "$sudoers" &&
-        msg_out "Enabled group sudo in $sudoers" ||
-        err_out "Failed to enable group sudo in $sudoers"
-    fi
-}
-
 
 ################################################################################
 # Install softwares
