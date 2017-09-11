@@ -113,27 +113,24 @@ fail2ban_packs=('false' 'fail2ban sendmail-bin sendmail' 'epel-release fail2ban 
 sendmail_packs=('false' 'sendmail-bin sendmail' 'epel-release sendmail' 'sendmail' 'sendmail' 'sendmail' 'sendmail')
 
 _get_os_index(){
-    if chkcmd apt; then
-        # Debian-apt
+    if chkcmd apt-get; then
+        # Debian
         echo 1
-    elif chkcmd apt-get; then
-        # Debian-apt-get
-        echo 2
     elif chkcmd yum; then
         # Centos
-        echo 3
+        echo 2
     elif chkcmd dnf; then
         # Fedora
-        echo 4
+        echo 3
     elif chkcmd pacman; then
         # Archlinux
-        echo 5
+        echo 4
     elif chkcmd emaint; then
         # Gentoo
-        echo 6
+        echo 5
     elif chkcmd slackpkg; then
         # Slackware
-        echo 7
+        echo 6
     else
         echo 0
     fi
