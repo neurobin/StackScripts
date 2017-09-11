@@ -3,7 +3,7 @@
 # <UDF name="user_name" Label="Standard username" example="user" />
 # <UDF name="user_password" Label="Password for standard user" />
 # <UDF name="user_shell" Label="Login shell for standard user" default="bash" example="bash" />
-# <UDF name="ssh_user" Label="SSH username" example="user" />
+# <UDF name="ssh_user" Label="SSH user" example="user" />
 # <UDF name="ssh_pubkey" Label="SSH public key" />
 # <UDF name="ssh_disable_root_login" Label="Disable root login in SSH" oneOf="yes,no" default="yes" />
 # <UDF name="ssh_restrict_address_family" Label="Restrict SSH AddressFamily" oneOf="inet,inet6" default="inet" />

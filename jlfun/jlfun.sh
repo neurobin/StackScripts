@@ -480,6 +480,13 @@ sendmail_install(){
     # * Install and start **sendmail** service
     $(system_get_install_command) ${sendmail_packs[$(_get_os_index)]}
     sendmail_start
+    #To enable sendmail to use STARTTLS, you need to:
+    #1) Add this line to /etc/mail/sendmail.mc and optionally
+    #   to /etc/mail/submit.mc:
+    #  include(`/etc/mail/tls/starttls.m4')dnl
+    #2) Run sendmailconfig
+    #3) Restart sendmail
+
 }
 
 
