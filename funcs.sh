@@ -137,7 +137,7 @@ system_get_rdns(){
     echo "$(host "$1" | awk '/pointer/ {print $5}' | sed 's/\.$//')"
 }
 
-# compatibility with linode bash lib
+# Compatibility with linode bash lib
 get_rdns(){
     # calls host on an IP address and returns its reverse dns
     # $1 - Required - ip address
@@ -150,7 +150,7 @@ system_get_rdns_primary_ip() {
     echo "$(system_get_rdns "$(system_primary_ip "$1")")"
 }
 
-# compatibility with linode bash lib
+# Compatibility with linode bash lib
 get_rdns_primary_ip(){
     # returns the reverse dns of the primary IP assigned to this system
     # $1 - Required - Network interface, default: eth0
@@ -279,25 +279,69 @@ ssh_restrict_address_family(){
 ### Fail2Ban ###
 ################
 
-fail2ban_restart(){
-    systemctl restart fail2ban || service fail2ban restart
-    systemctl restart sendmail || service sendmail restart
-}
-
 fail2ban_start(){
+    # start and enable fail2ban
     systemctl start fail2ban || service fail2ban start
     systemctl enable fail2ban
     systemctl start sendmail || service sendmail start
     systemctl enable sendmail
 }
 
+fail2ban_restart(){
+    # restart fail2ban
+    systemctl restart fail2ban || service fail2ban restart
+    systemctl restart sendmail || service sendmail restart
+}
+
 fail2ban_install(){
+    # install fail2ban
     system_update
     $(system_get_install_command) ${fail2ban_packs[$(get_os_index)]}
     mkdir -p /var/run/fail2ban
     fail2ban_start
 }
 
+###########
+### UFW ###
+###########
+
+ufw_restart(){
+    # restart ufw
+    systemctl restart ufw || service ufw restart
+    systemctl enable ufw
+}
+
+ufw_start(){
+    # start and enable ufw
+    systemctl start ufw || service ufw start
+    systemctl enable ufw
+}
+
+ufw_allow_commons(){
+    # Allow common service ports
+    ufw allow ssh   # SSH, 22
+    ufw allow ftp   # FTP, 21/tcp
+    ufw allow http  # HTTP, 80
+    ufw allow https # HTTPS, 443
+    ufw allow 25    # incoming SMTP
+    ufw allow 143   # incoming IMAP
+    ufw allow 993   # incoming IMAPS
+    ufw allow 110   # incoming POP3
+    ufw allow 995   # incoming POP3S
+}
+
+ufw_install(){
+    # install ufw, debian, ubuntu, and archlinux
+    system_update
+    $(system_get_install_command) ufw
+    ufw_start
+    if chkcmd ufw; then
+        ufw_allow_commons
+        ufw default deny incoming
+        ufw default allow outgoing
+        ufw_allow_commons
+    fi
+}
 
 ################################################################################
 # Users and Authentication
@@ -361,7 +405,7 @@ user_add_sudo(){
 
 
 
-# compatibility with linode bash lib
+# Compatibility with linode bash lib
 user_add_pubkey(){
     # Adds the users public key to authorized_keys for the specified user.
     # Make sure you wrap your input variables in double quotes, or the key may not load properly.
