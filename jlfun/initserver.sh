@@ -2,7 +2,6 @@
 # <UDF name="system_hostname" Label="System hostname" example="JLFUN" />
 # <UDF name="user_name" Label="Standard username" example="user" />
 # <UDF name="user_password" Label="Password for standard user" />
-# <UDF name="user_shell" Label="Login shell for standard user" default="bash" example="bash" />
 # <UDF name="ssh_user" Label="SSH user" example="user" />
 # <UDF name="ssh_pubkey" Label="SSH public key" />
 # <UDF name="ssh_disable_root_login" Label="Disable root login in SSH" oneOf="yes,no" default="yes" />
@@ -24,7 +23,7 @@ exec &> /var/cache/initserver.sh.log
 system_update
 system_set_hostname "$SYSTEM_HOSTNAME"
 system_add_host_entry 127.0.1.1 "$SYSTEM_HOSTNAME"
-user_add_with_sudo "$USER_NAME" "$USER_PASSWORD" "$USER_SHELL"
+user_add_with_sudo "$USER_NAME" "$USER_PASSWORD"
 ssh_user_add_pubkey "$SSH_USER" "$SSH_PUBKEY"
 
 if [[ "$SSH_DISABLE_ROOT_LOGIN" = yes ]]; then
