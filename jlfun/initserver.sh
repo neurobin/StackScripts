@@ -32,6 +32,7 @@ if [[ "$SSH_DISABLE_ROOT_LOGIN" = yes ]]; then
 fi
 
 ssh_restrict_address_family "$SSH_RESTRICT_ADDRESS_FAMILY"
+ssh_restart
 
 if [[ "$FAIL2BAN_INSTALL" = yes ]]; then
     fail2ban_install
@@ -56,9 +57,11 @@ fi
 if [[ "$APACHE2_INSTALL" = yes ]]; then
     apache2_install
     apache2_tune_with_defaults
+    apache2_restart
 fi
 
 if [[ "$MYSQL_INSTALL" = yes ]]; then
     mysql_install "$MYSQL_ROOT_PASSWORD"
     mysql_tune_with_defaults
+    mysql_restart
 fi

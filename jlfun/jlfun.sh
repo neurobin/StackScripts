@@ -106,11 +106,11 @@ chkcmd(){
 # Compatibility layer
 ################################################################################
 
-oss=(Unknown Debian Debian Centos Fedora Archlinux Gentoo Slackware)
-install_command=('false' 'apt install -y' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S' 'emerge' 'slackpkg install')
-update_command=('false' 'apt update; apt upgrade' 'apt-get update; apt-get upgrade' 'yum update' 'dnf upgrade' 'pacman -Syu' 'emaint sync; emerge --uDN @world' 'slackpkg update; slackpkg upgrade-all')
-fail2ban_packs=('false' 'fail2ban sendmail-bin sendmail' 'fail2ban sendmail-bin sendmail' 'epel-release fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail')
-sendmail_packs=('false' 'sendmail-bin sendmail' 'sendmail-bin sendmail' 'epel-release sendmail' 'sendmail' 'sendmail' 'sendmail' 'sendmail')
+oss=(Unknown Debian Centos Fedora Archlinux Gentoo Slackware)
+install_command=('false' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S' 'emerge' 'slackpkg install')
+update_command=('false' 'apt-get update; apt-get upgrade -y' 'yum -y update' 'dnf -y upgrade' 'pacman -Syu' 'emaint sync; emerge --uDN @world' 'slackpkg update; slackpkg upgrade-all')
+fail2ban_packs=('false' 'fail2ban sendmail-bin sendmail' 'epel-release fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail')
+sendmail_packs=('false' 'sendmail-bin sendmail' 'epel-release sendmail' 'sendmail' 'sendmail' 'sendmail' 'sendmail')
 
 _get_os_index(){
     if chkcmd apt; then
