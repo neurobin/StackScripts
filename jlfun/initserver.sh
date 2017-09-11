@@ -18,7 +18,7 @@
 source <ssinclude StackScriptID="182722">
 
 mkdir -p /var/cache
-exec &> /var/cache/initserver.sh.log
+exec &>  >(tee -a /var/cache/initserver.sh.log)
 
 system_upgrade
 system_set_hostname "$SYSTEM_HOSTNAME"
