@@ -1,25 +1,24 @@
 #!/bin/bash
+# <UDF name="system_hostname" Label="System hostname" example="JLFUN" />
+# <UDF name="user_name" Label="Standard username" example="user" />
+# <UDF name="user_password" Label="Password for standard user" />
+# <UDF name="user_shell" Label="Login shell for standard user" default="bash" example="bash" />
+# <UDF name="ssh_user" Label="SSH username" example="user" />
+# <UDF name="ssh_pubkey" Label="SSH public key" />
+# <UDF name="ssh_disable_root_login" Label="Disable root login in SSH" oneOf="yes,no" default="yes" />
+# <UDF name="ssh_restrict_address_family" Label="Restrict SSH AddressFamily" oneOf="inet,inet6" default="inet" />
+# <UDF name="fail2ban_install" Label="Install fail2ban" oneOf="yes,no" default="yes" />
+# <UDF name="ufw_install" Label="Install UFW firewall" oneOf="yes,no" default="yes" />
+# <UDF name="common_install" Label="Install common packages (git, wget, tar, bc, gzip, lzip, inxi)" oneOf="yes,no" default="yes" />
+# <UDF name="colorful_bash_prompt_install" Label="Install a colorful bash prompt" oneOf="yes,no" default="yes" />
+# <UDF name="sendmail_install" Label="Install sendmail" oneOf="yes,no" default="yes" />
+# <UDF name="apache2_install" Label="Install apache2 webserver" oneOf="yes,no" default="yes" />
+# <UDF name="mysql_install" Label="Install mysql" oneOf="yes,no" default="yes" />
 
-<UDF name="system_hostname" Label="System hostname" example="JLFUN" />
-<UDF name="user_name" Label="Standard username" example="user" />
-<UDF name="user_password" Label="Password for standard user" />
-<UDF name="user_shell" Label="Login shell for standard user" default="bash" example="bash" />
-<UDF name="ssh_user" Label="SSH username" example="user" />
-<UDF name="ssh_pubkey" Label="SSH public key" />
-<UDF name="ssh_disable_root_login" Label="Disable root login in SSH" oneOf="yes,no" default="yes" />
-<UDF name="ssh_restrict_address_family" Label="Restrict SSH AddressFamily" oneOf="inet,inet6" default="inet" />
-<UDF name="fail2ban_install" Label="Install fail2ban" oneOf="yes,no" default="yes" />
-<UDF name="ufw_install" Label="Install UFW firewall" oneOf="yes,no" default="yes" />
-<UDF name="common_install" Label="Install common packages (git, wget, tar, bc, gzip, lzip, inxi)" oneOf="yes,no" default="yes" />
-<UDF name="colorful_bash_prompt_install" Label="Install a colorful bash prompt" oneOf="yes,no" default="yes" />
-<UDF name="sendmail_install" Label="Install sendmail" oneOf="yes,no" default="yes" />
-<UDF name="apache2_install" Label="Install apache2 webserver" oneOf="yes,no" default="yes" />
-<UDF name="mysql_install" Label="Install mysql" oneOf="yes,no" default="yes" />
+source <ssinclude StackScriptID="182722">
 
 mkdir -p /var/cache
 exec &> /var/cache/initserver.sh.log
-
-source <ssinclude StackScriptID=182722>
 
 system_update
 system_set_hostname "$SYSTEM_HOSTNAME"
