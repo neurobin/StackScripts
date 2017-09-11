@@ -48,37 +48,37 @@
 ################################################################################
 
 msg_out(){
-    # Print message with backslash interpretation prepending with '*** '
-    # Prints on stdout
-    # All arguments are printed as a single space separated string.
+    # * Print message with backslash interpretation prepending with '*** '
+    # * Prints on stdout
+    # * All arguments are printed as a single space separated string.
 	printf '\n%b\n' "*** $*"
 }
 
 err_out(){
-    # Print error message with backslash interpretation prepending with 'E: '
-    # Prints on stderr
-    # All arguments are printed as a single space separated string.
+    # * Print error message with backslash interpretation prepending with 'E: '
+    # * Prints on stderr
+    # * All arguments are printed as a single space separated string.
 	printf '\n%b\n' "E: $*" >&2
 }
 
 wrn_out(){
-    # Print warning message with backslash interpretation prepending with 'W: '
-    # Prints on stderr
-    # All arguments are printed as a single space separated string.
+    # * Print warning message with backslash interpretation prepending with 'W: '
+    # * Prints on stderr
+    # * All arguments are printed as a single space separated string.
 	printf '\n%b\n' "W: $*" >&2
 }
 
 err_exit(){
-    # Print error with err_out() and exit with 1 exit status
-    # Print error message with backslash interpretation prepending with 'E: '
-    # Prints on stderr
-    # All arguments are printed as a single space separated string.
+    # * Print error with err_out() and exit with 1 exit status
+    # * Print error message with backslash interpretation prepending with 'E: '
+    # * Prints on stderr
+    # * All arguments are printed as a single space separated string.
 	err_out "$*"
 	exit 1
 }
 
 print_linode_info(){
-    # Show linode info
+    # * Show linode info
     echo "
     Linode ID:              $LINODE_ID
     Linode data center ID:  $LINODE_DATACENTERID
@@ -93,8 +93,8 @@ print_linode_info(){
 ################################################################################
 
 chkcmd(){
-    # Check if a command is available
-    # $1 - Required - command
+    # * Check if a command is available
+    # * `$1` - Required - command to check
     if command -v "$1" >/dev/null 2>&1; then
         return 0
     else
@@ -144,24 +144,24 @@ _get_os_index(){
 ################################################################################
 
 system_update(){
-    # upgrade the system
+    # * upgrade the system
     ${update_command[$(_get_os_index)]}
 }
 
 system_get_install_command(){
-    # get package manager install command
+    # * get package manager install command
     echo "${install_command[$(_get_os_index)]}"
 }
 
 system_get_primary_ip() {
-    # returns the primary IP assigned to a network interface
-    # $1 - Required - network interface, default: eth0
+    # * returns the primary IP assigned to a network interface
+    # * `$1` - Required - network interface, default: eth0
     echo "$(ifconfig "${1:-eth0}" | awk -F: '/inet addr:/ {print $2}' | awk '{ print $1 }')"
 }
 
 system_get_rdns(){
-    # calls host on an IP address and returns its reverse dns
-    # $1 - Required - ip address
+    # * calls host on an IP address and returns its reverse dns
+    # * `$1` - Required - ip address
     if ! chkcmd host; then
         $(system_get_install_command) dnsutils > /dev/null 2>&1
     fi
@@ -169,13 +169,13 @@ system_get_rdns(){
 }
 
 system_get_rdns_primary_ip() {
-    # returns the reverse dns of the primary IP assigned to this system
-    # $1 - Required - Network interface, default: eth0
+    # * returns the reverse dns of the primary IP assigned to this system
+    # * `$1` - Required - Network interface, default: eth0
     echo "$(system_get_rdns "$(system_primary_ip "$1")")"
 }
 
 system_set_hostname() {
-    # $1 - Required - The hostname to define
+    # * `$1` - Required - The hostname to define
     HOSTNAME="$1"
         
     if [ ! -n "$HOSTNAME" ]; then
@@ -207,8 +207,8 @@ system_set_hostname() {
 }
 
 system_add_host_entry(){
-    # $1 - Required - The IP address to set a hosts entry for
-    # $2 - Required - The FQDN to set to the IP
+    # * `$1` - Required - The IP address to set a hosts entry for
+    # * `$2` - Required - The FQDN to set to the IP
     IPADDR="$1"
     FQDN="$2"
 
@@ -228,18 +228,25 @@ system_add_host_entry(){
 ### SSH ###
 ###########
 
+ssh_start(){
+    # * start ssh service
+    systemctl start sshd ||
+    service ssh start
+}
+
 ssh_restart(){
+    # * restart ssh service
     systemctl restart sshd ||
     service ssh restart
 }
 
 ssh_user_add_pubkey(){
-    # Adds the users public key to authorized_keys for the specified user.
-    # Make sure you wrap your input variables in double quotes, or the key may not load properly.
+    # * Adds the users public key to authorized_keys for the specified user.
+    # * Make sure you wrap your input variables in double quotes, or the key may not load properly.
     #
     #
-    # $1 - Required - username
-    # $2 - Required - public key
+    # * `$1` - Required - username
+    # * `$2` - Required - public key
     USERNAME="$1"
     USERPUBKEY="$2"
     
@@ -271,7 +278,7 @@ ssh_user_add_pubkey(){
 }
 
 ssh_disable_root_login(){
-    # Disables root SSH access.
+    # * Disables root SSH access.
     if sed -i'.bak' 's/PermitRootLogin[[:blank:]][[:blank:]]*yes/PermitRootLogin no/' /etc/ssh/sshd_config; then
         msg_out "Disabled root login in SSH"
         return 0
@@ -282,7 +289,7 @@ ssh_disable_root_login(){
 }
 
 ssh_restrict_address_family(){
-    # $1 - Required - Address family, inet for IPV4 and inet6 of IPV6
+    # * `$1` - Required - Address family, inet for IPV4 and inet6 of IPV6
     if echo "AddressFamily $1" | sudo tee -a /etc/ssh/sshd_config; then
         msg_out "Added 'AddressFamily $1' to /etc/ssh/sshd_config"
         return 0
@@ -297,18 +304,18 @@ ssh_restrict_address_family(){
 ################
 
 fail2ban_start(){
-    # start and enable fail2ban
+    # * start and enable fail2ban
     systemctl start fail2ban || service fail2ban start
     systemctl enable fail2ban
 }
 
 fail2ban_restart(){
-    # restart fail2ban
+    # * restart fail2ban
     systemctl restart fail2ban || service fail2ban restart
 }
 
 fail2ban_install(){
-    # install fail2ban
+    # * install **fail2ban**
     $(system_get_install_command) ${fail2ban_packs[$(_get_os_index)]}
     mkdir -p /var/run/fail2ban
     fail2ban_start
@@ -319,19 +326,19 @@ fail2ban_install(){
 ###########
 
 ufw_restart(){
-    # restart ufw
+    # * restart ufw
     systemctl restart ufw || service ufw restart
     systemctl enable ufw
 }
 
 ufw_start(){
-    # start and enable ufw
+    # * start and enable ufw
     systemctl start ufw || service ufw start
     systemctl enable ufw
 }
 
 ufw_allow_commons(){
-    # allow common service ports
+    # * allow common service ports
     ufw allow ssh   # SSH, 22
     ufw allow ftp   # FTP, 21/tcp
     ufw allow http  # HTTP, 80
@@ -344,7 +351,7 @@ ufw_allow_commons(){
 }
 
 ufw_install(){
-    # install ufw (debian, ubuntu, and archlinux)
+    # * install **ufw** (debian, ubuntu, and archlinux)
     system_update
     $(system_get_install_command) ufw
     if chkcmd ufw; then
@@ -362,11 +369,11 @@ ufw_install(){
 
 
 user_add_with_sudo(){
-    # Installs sudo if needed and creates a user in the sudo group.
+    # * Installs sudo if needed and creates a user in the sudo group.
     #
-    # $1 - Required - username
-    # $2 - Required - password
-    # $3 - Optional - shell
+    # * `$1` - Required - username
+    # * `$2` - Required - password
+    # * `$3` - Optional - shell
     USERNAME="$1"
     USERPASS="$2"
     USERSHELL="$3"
@@ -426,7 +433,7 @@ user_add_with_sudo(){
 ##############
 
 common_install(){
-    # Install some common packages: git, wget, bc, tar, gzip, lzip inxi
+    # * Install some common packages: git, wget, bc, tar, gzip, lzip inxi
     packs=(git wget bc tar gzip lzip inxi)
     for pack in "${packs[@]}"; do
         if $(system_get_install_command) $pack; then
@@ -438,7 +445,7 @@ common_install(){
 }
 
 colorful_bash_prompt_install(){
-    # Install a colorful bash prompt
+    # * Install a colorful bash prompt
     if ! chkcmd wget; then
         $(system_get_install_command) wget
     fi
@@ -457,18 +464,18 @@ colorful_bash_prompt_install(){
 ################
 
 sendmail_start(){
-    # Start sendmail service
+    # * Start sendmail service
     systemctl start sendmail || service sendmail start
     systemctl enable sendmail
 }
 
 sendmail_restart(){
-    # Restart sendmail service
+    # * Restart sendmail service
     systemctl restart sendmail || service sendmail restart
 }
 
 sendmail_install(){
-    # Install and start sendmail service
+    # * Install and start **sendmail** service
     $(system_get_install_command) ${sendmail_packs[$(_get_os_index)]}
     sendmail_start
 }
@@ -480,19 +487,19 @@ sendmail_install(){
 
 
 apache2_start(){
-    # start apache2
+    # * start apache2
     systemctl start apache2 ||
     service apache2 start
 }
 
 apache2_restart(){
-    # restart apache2
+    # * restart apache2
     systemctl restart apache2 ||
     service apache2 restart
 }
 
 apache2_install() {
-    # installs the system default apache2 MPM
+    # * installs the system default **apache2**
     $(system_get_install_command) apache2
 
     a2dissite default # disable the interfering default virtualhost
@@ -507,9 +514,9 @@ apache2_install() {
 }
 
 apache2_tune(){
-    # Tunes Apache's memory to use the percentage of RAM you specify, defaulting to 40%
+    # * Tunes Apache's memory to use the percentage of RAM you specify, defaulting to 40%
 
-    # $1 - the percent of system memory to allocate towards Apache
+    # * $1 - the percent of system memory to allocate towards Apache
 
     PERCENT=${1:-40}
 
@@ -523,7 +530,7 @@ apache2_tune(){
 }
 
 apache2_tune_with_defaults(){
-    # Tune apache2 according to linode ram size
+    # * Tune apache2 according to linode ram size
     msg_out "Tuning apache2 for LINODE_RAM=$LINODE_RAM"
     content="
     <IfModule mpm_prefork_module>
@@ -549,20 +556,20 @@ apache2_tune_with_defaults(){
 ###########################################################
 
 mysql_start(){
-    # start mysql service
+    # * start mysql service
     systemctl start mysql ||
     service mysql start
 }
 
 mysql_restart(){
-    # restart mysql service
+    # * restart mysql service
     systemctl restart mysql ||
     service mysql restart
 }
 
 mysql_install(){
-    # Install and secure mysql (Debian/Ubuntu)
-    # $1 - the mysql root password
+    # * Install **mysql** and secure it with `mysql_secure_installation` (Debian/Ubuntu)
+    # * `$1` - the mysql root password
     
     if [[ "${oss[$(_get_os_index)]}" != Debian ]]; then
         err_out "mysql_install() function is not compatible with non-debian like systems"
@@ -624,9 +631,9 @@ $prop = $val" &&
 }
 
 mysql_tune(){
-    # Tunes MySQL's memory usage to utilize the percentage of memory you specify, defaulting to 40%
+    # * Tunes MySQL's memory usage to utilize the percentage of memory you specify, defaulting to 40%
 
-    # $1 - the percent of system memory to allocate towards MySQL
+    # * `$1` - the percent of system memory to allocate towards MySQL
 
     PERCENT=${1:-40}
 
@@ -656,7 +663,7 @@ mysql_tune(){
 }
 
 mysql_tune_with_defaults(){
-    # Tune mysql according to linode RAM size
+    # * Tune mysql according to linode RAM size
     mysql_tune
     sed -i -e 's/^[[:blank:]]*key_buffer.*/#&/' /etc/mysql/my.cnf
     max_allowed_packet=$((512*(LINODE_RAM/1024)))K
