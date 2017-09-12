@@ -615,18 +615,18 @@ mysql_install(){
             $(system_get_install_command) expect
         fi
         msg_out "Securing mysql with mysql_secure_installation"
-        expect -c '
+        expect -c "
             set timeout -1
             spawn -noecho mysql_secure_installation --use-default
             while {1} {
                 expect {
-                    timeout { exp_send_user "\nE: Failed!!!. Timed out.\n"; exit 1}
+                    timeout { exp_send_user '\nE: Failed!!!. Timed out.\n'; exit 1}
                     eof {break}
-                    -nocase "*password for user root:*" {
-                        exp_send "'"$1"'\r"
+                    -nocase \"*password for user root:*\" {
+                        exp_send \"$1\r\"
                     }
                 }
-            }'
+            }"
     else
         return 1
     fi
