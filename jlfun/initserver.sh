@@ -1,5 +1,5 @@
 #!/bin/bash
-# <UDF name="system_hostname" Label="System hostname" example="JLFUN" default="" />
+# <UDF name="system_hostname" Label="System hostname" example="jlfun" default="" />
 # <UDF name="user_name" Label="Standard username" example="user" default="" />
 # <UDF name="user_password" Label="Password for standard user" default="" />
 # <UDF name="ssh_user" Label="SSH user" example="user" default="" />
