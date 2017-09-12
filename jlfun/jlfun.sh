@@ -218,7 +218,7 @@ system_upgrade(){
 
 system_get_primary_ip() {
     # * returns the primary IP assigned to a network interface
-    # * `$1` - Required - network interface, default: eth0
+    # * `$1` - Optional - network interface, default: eth0
     echo "$(ifconfig "${1:-eth0}" | awk -F: '/inet addr:/ {print $2}' | awk '{ print $1 }')"
 }
 
@@ -233,8 +233,8 @@ system_get_rdns(){
 
 system_get_rdns_primary_ip() {
     # * returns the reverse dns of the primary IP assigned to this system
-    # * `$1` - Required - Network interface, default: eth0
-    echo "$(system_get_rdns "$(system_primary_ip "$1")")"
+    # * `$1` - Optional - Network interface, default: eth0
+    echo "$(system_get_rdns "$(system_get_primary_ip "${1:-eth0}")")"
 }
 
 system_set_hostname() {
