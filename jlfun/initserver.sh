@@ -55,6 +55,7 @@ if [[ -n "$SSH_RESTRICT_ADDRESS_FAMILY" ]]; then
 fi
 
 if [[ "$COMMON_INSTALL" = yes ]]; then
+    COMMON_PACKS+=(build-essential)
     common_install
 fi
 
