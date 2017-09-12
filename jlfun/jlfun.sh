@@ -710,11 +710,6 @@ mysql_install(){
     # * `$1` - the mysql root password
     # * Package list overridable by defining MYSQL_PACKS environment variable
     
-    if [[ "$(system_get_os_family)" != Debian ]] || [[ "$(system_get_os_family)" != Ubuntu ]]; then
-        err_out "mysql_install() function is not compatible with non-debian like systems"
-        return 1
-    fi
-    
     if [ ! -n "$1" ]; then
         err_out "mysql_install() requires the root pass as its first argument"
         return 1;
