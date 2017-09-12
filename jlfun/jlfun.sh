@@ -126,8 +126,8 @@ export MYSQL_PACKS=(mysql-server mysql-client)  # Can be overriden to customize 
 ################################################################################
 
 oss=(Unknown Debian Centos Fedora Archlinux Gentoo Slackware)
-install_command=('false' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S' 'emerge' 'slackpkg install')
-update_command=('false' 'apt-get update' 'yum -y update' 'dnf -y upgrade' 'pacman -Syu' 'emaint sync' 'slackpkg update')
+install_command=('false' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S --noconfirm' 'emerge' 'slackpkg install')
+update_command=('false' 'apt-get update' 'yum -y update' 'dnf -y upgrade' 'pacman -Syu --noconfirm' 'emaint sync' 'slackpkg update')
 upgrade_command=('false' 'apt-get -y dist-upgrade' 'true' 'true' 'true' 'emerge --uDN @world' 'slackpkg upgrade-all')
 fail2ban_packs=('false' 'fail2ban' 'epel-release fail2ban' 'fail2ban' 'fail2ban' 'fail2ban' 'fail2ban')
 sendmail_packs=('false' 'sendmail-bin sendmail' 'epel-release sendmail' 'sendmail' 'sendmail' 'sendmail' 'sendmail')
