@@ -1,7 +1,6 @@
 #!/bin/bash
 
-echo '
-This script does not do anything on its own. Does not deploy directly.
+echo 'This script does not do anything on its own. Does not deploy directly.
 
 This is a collection of useful bash functions to be included in other bash StackScripts with a `source <ssinclude StackScriptID=182722>` line.
 
@@ -12,4 +11,4 @@ Apache2 and MySQL related functions are only for Ubuntu (may work in Debian too)
 # Functions
 
 The available functions are:' > README.md
-grep '^[[:blank:]]*\(\b[a-zA-Z][a-zA-Z0-9_]\+[[:blank:]]*([[:blank:]]*)[[:blank:]]*{\| # \* .*\)' jlfun.sh |sed -e 's/\b\([a-zA-Z0-9_]\+\)[[:blank:]]*([[:blank:]]*)[[:blank:]]*{/\n## \1\n/' -e 's/^[[:blank:]]*# //' >> README.md
+grep '^[[:blank:]]*\(\b[a-zA-Z][a-zA-Z0-9_]\+[[:blank:]]*([[:blank:]]*)[[:blank:]]*{\| # \* .*\)' jilfun |sed -e 's/\b\([a-zA-Z0-9_]\+\)[[:blank:]]*([[:blank:]]*)[[:blank:]]*{/\n## \1\n/' -e 's/^[[:blank:]]*# //' >> README.md
