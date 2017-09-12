@@ -102,6 +102,23 @@ chkcmd(){
     fi
 }
 
+
+################################################################################
+# Overridable environment variables
+################################################################################
+export OSS=                 # Current OS family. (Ubuntu may be specified as Debian) (not an array)
+export INSTALL_COMMAND=     # Package manager install command, e.g 'apt-get -y install' (not an array)
+export UPDATE_COMMAND=      # Package manager update command, e.g 'apt-get -y update' (not an array)
+export UPGRADE_COMMAND=     # Package manager upgrade command, e.g 'apt-get -y upgrade' (not an array)
+export FAIL2BAN_PACKS=()    # Package names that will install fail2ban in the system, e.g (epel-release fail2ban) for Centos
+export SENDMAIL_PACKS=()    # Package names that will install sendmail in the system, e.g (sendmail-bin sendmail) for Debian
+export UFW_PACKS=()         # Package names that will install ufw in the system, e.g (ufw)
+export COMMON_PACKS=(git wget bc tar gzip lzip inxi) # This is an array of commonly used package names
+export APACHE2_PACKS=()     # Can be overriden to customize apache2 install
+export APACHE2_MODULES=(rewrite ssl)            # Apache2 modules to enable
+export MYSQL_PACKS=(mysql-server mysql-client)  # Can be overriden to customize mysql installation
+################################################################################
+
 ################################################################################
 # Compatibility layer
 ################################################################################
@@ -110,8 +127,10 @@ oss=(Unknown Debian Centos Fedora Archlinux Gentoo Slackware)
 install_command=('false' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S' 'emerge' 'slackpkg install')
 update_command=('false' 'apt-get update' 'yum -y update' 'dnf -y upgrade' 'pacman -Syu' 'emaint sync' 'slackpkg update')
 upgrade_command=('false' 'apt-get -y dist-upgrade' 'true' 'true' 'true' 'emerge --uDN @world' 'slackpkg upgrade-all')
-fail2ban_packs=('false' 'fail2ban sendmail-bin sendmail' 'epel-release fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail')
+fail2ban_packs=('false' 'fail2ban' 'epel-release fail2ban' 'fail2ban' 'fail2ban' 'fail2ban' 'fail2ban')
 sendmail_packs=('false' 'sendmail-bin sendmail' 'epel-release sendmail' 'sendmail' 'sendmail' 'sendmail' 'sendmail')
+ufw_packs=('false' 'ufw' 'ufw' 'ufw' 'ufw' 'ufw' 'ufw')
+apache2_packs=('false' 'apache2' 'apache2' 'apache2' 'apache2' 'apache2' 'apache2')
 
 _get_os_index(){
     if chkcmd apt-get; then
@@ -141,21 +160,58 @@ _get_os_index(){
 # System utils
 ################################################################################
 
+system_get_install_command(){
+    # * Get package manager install command
+    # * Overridable by defining INSTALL_COMMAND environment variable
+    if [[ "$INSTALL_COMMAND" = '' ]]; then
+        echo "${install_command[$(_get_os_index)]}"
+    else
+        echo "$INSTALL_COMMAND"
+    fi
+}
+
+system_get_update_command(){
+    # * Get package manager update command
+    # * Overridable by defining UPDATE_COMMAND environment variable
+    if [[ "$UPDATE_COMMAND" = '' ]]; then
+        echo "${update_command[$(_get_os_index)]}"
+    else
+        echo "$UPDATE_COMMAND"
+    fi
+}
+
+system_get_upgrade_command(){
+    # * Get package manager upgrade command
+    # * Overridable by defining UPGRADE_COMMAND environment variable
+    if [[ "$UPGRADE_COMMAND" = '' ]]; then
+        echo "${upgrade_command[$(_get_os_index)]}"
+    else
+        echo "$UPGRADE_COMMAND"
+    fi
+}
+
+system_get_os_family(){
+    # * Get OS family name
+    # * Overridable by defining OSS environment variable
+    if [[ "$OSS" = '' ]]; then
+        echo "${oss[$(_get_os_index)]}"
+    else
+        echo "$OSS"
+    fi
+}
+
 system_update(){
     # * update the system
     # * some os may perform total upgrade like archlinux, centos, fedora
-    ${update_command[$(_get_os_index)]}
+    # * update command used may be overriden with UPDATE_COMMAND environment variable
+    $(system_get_update_command)
 }
 
 system_upgrade(){
     # * upgrade the system
+    # * upgrade command used may be overriden with UPGRADE_COMMAND environment variable
     system_update
-    ${upgrade_command[$(_get_os_index)]}
-}
-
-system_get_install_command(){
-    # * get package manager install command
-    echo "${install_command[$(_get_os_index)]}"
+    $(system_get_upgrade_command)
 }
 
 system_get_primary_ip() {
@@ -247,14 +303,15 @@ user_add_with_sudo(){
     fi
     
     if [[ "$USERSHELL" != '' ]]; then
-        usermod_opts="-s '$USERSHELL'"
+        usermod_opts=(-s "$USERSHELL")
+        $(system_get_install_command) $(basename "$USERSHELL")
     fi
     
     $(system_get_install_command) sudo
-    $(system_get_install_command) adduser
+    #$(system_get_install_command) adduser
     
     #adduser "$USERNAME" --disabled-password --gecos ""
-    useradd -m "$USERNAME" ${usermod_opts} &&
+    useradd -m "$USERNAME" "${usermod_opts[@]}" &&
     msg_out "Added user $USERNAME" ||
     err_out "Failed to add user $USERNAME"
     
@@ -263,7 +320,7 @@ user_add_with_sudo(){
     err_out "Failed to update password for $USERNAME"
     
     sudoers=/etc/sudoers
-    if [[ "${oss[$(_get_os_index)]}" = Centos ]] || [[ "${oss[$(_get_os_index)]}" = Fedora ]]; then
+    if [[ "$(system_get_os_family)" = Centos ]] || [[ "$(system_get_os_family)" = Fedora ]]; then
         groupadd wheel
         
         usermod -aG wheel "$USERNAME" &&
@@ -370,6 +427,16 @@ ssh_restrict_address_family(){
 ### Fail2Ban ###
 ################
 
+fail2ban_get_package_names(){
+    # * Get the packages names that will install fail2ban
+    # * Overridable by defining FAIL2BAN_PACKS environment variable
+    if [[ -z "$FAIL2BAN_PACKS" ]]; then
+        echo "${fail2ban_packs[$(_get_os_index)]}"
+    else
+        echo "${FAIL2BAN_PACKS[@]}"
+    fi
+}
+
 fail2ban_start(){
     # * start and enable fail2ban
     systemctl start fail2ban || service fail2ban start
@@ -383,7 +450,7 @@ fail2ban_restart(){
 
 fail2ban_install(){
     # * install **fail2ban**
-    $(system_get_install_command) ${fail2ban_packs[$(_get_os_index)]}
+    $(system_get_install_command) $(fail2ban_get_package_names)
     mkdir -p /var/run/fail2ban
     fail2ban_start
 }
@@ -392,15 +459,25 @@ fail2ban_install(){
 ### UFW ###
 ###########
 
-ufw_restart(){
-    # * restart ufw
-    systemctl restart ufw || service ufw restart
-    systemctl enable ufw
+ufw_get_package_names(){
+    # * Get the packages names that will install ufw
+    # * Overridable by defining UFW_PACKS environment variable
+    if [[ -z "$UFW_PACKS" ]]; then
+        echo "${ufw_packs[$(_get_os_index)]}"
+    else
+        echo "${UFW_PACKS[@]}"
+    fi
 }
 
 ufw_start(){
     # * start and enable ufw
     systemctl start ufw || service ufw start
+    systemctl enable ufw
+}
+
+ufw_restart(){
+    # * restart ufw
+    systemctl restart ufw || service ufw restart
     systemctl enable ufw
 }
 
@@ -420,7 +497,7 @@ ufw_allow_commons(){
 ufw_install(){
     # * install **ufw** (debian, ubuntu, and archlinux)
     system_update
-    $(system_get_install_command) ufw
+    $(system_get_install_command) $(ufw_get_package_names)
     if chkcmd ufw; then
         ufw_allow_commons
         ufw default deny incoming
@@ -441,8 +518,8 @@ ufw_install(){
 
 common_install(){
     # * Install some common packages: git, wget, bc, tar, gzip, lzip inxi
-    packs=(git wget bc tar gzip lzip inxi)
-    for pack in "${packs[@]}"; do
+    # * Overridable by defining COMMON_PACKS environment array variable
+    for pack in "${COMMON_PACKS[@]}"; do
         if $(system_get_install_command) $pack; then
             msg_out "Successfully installed '$pack'"
         else
@@ -453,6 +530,7 @@ common_install(){
 
 colorful_bash_prompt_install(){
     # * Install a colorful bash prompt
+    # * .bashrc file: https://raw.githubusercontent.com/neurobin/DemoCode/master/bash/.bashrc
     if ! chkcmd wget; then
         $(system_get_install_command) wget
     fi
@@ -470,6 +548,16 @@ colorful_bash_prompt_install(){
 ### sendmail ###
 ################
 
+sendmail_get_package_names(){
+    # * Get the packages names that will install sendmail
+    # * Overridable by defining SENDMAIL_PACKS environment variable
+    if [[ -z "$SENDMAIL_PACKS" ]]; then
+        echo "${sendmail_packs[$(_get_os_index)]}"
+    else
+        echo "${SENDMAIL_PACKS[@]}"
+    fi
+}
+
 sendmail_start(){
     # * Start sendmail service
     systemctl start sendmail || service sendmail start
@@ -483,7 +571,7 @@ sendmail_restart(){
 
 sendmail_install(){
     # * Install and start **sendmail** service
-    $(system_get_install_command) ${sendmail_packs[$(_get_os_index)]}
+    $(system_get_install_command) $(sendmail_get_package_names)
     if chkcmd sendmail; then
         sendmail_start
         echo "include(\`/etc/mail/tls/starttls.m4')dnl" | tee -a /etc/mail/sendmail.mc /etc/mail/submit.mc
@@ -499,6 +587,13 @@ sendmail_install(){
 ### Apache2 ###
 ###############
 
+apache2_get_package_names(){
+    if [[ -z "$APACHE2_PACKS" ]]; then
+        echo "${apache2_packs[$(_get_os_index)]}"
+    else
+        echo "${APACHE2_PACKS[@]}"
+    fi
+}
 
 apache2_start(){
     # * start apache2
@@ -514,9 +609,9 @@ apache2_restart(){
 
 apache2_install() {
     # * installs the system default **apache2**
-    $(system_get_install_command) apache2
+    $(system_get_install_command) $(apache2_get_package_names)
     if chkcmd a2dissite; then
-        a2dissite default # disable the interfering default virtualhost
+        a2dissite default || a2dissite 000-default # disable the interfering default virtualhost
 
         # clean up, or add the NameVirtualHost line to ports.conf
         sed -i -e 's/^NameVirtualHost \*$/NameVirtualHost *:80/' /etc/apache2/ports.conf
@@ -525,6 +620,9 @@ apache2_install() {
             cat /etc/apache2/ports.conf >> /etc/apache2/ports.conf.tmp
             mv -f /etc/apache2/ports.conf.tmp /etc/apache2/ports.conf
         fi
+        for module in "${APACHE2_MODULES[@]}"; do
+            a2enmod "$module"
+        done
     else
         return 1
     fi
@@ -588,7 +686,7 @@ mysql_install(){
     # * Install **mysql** (Debian/Ubuntu)
     # * `$1` - the mysql root password
     
-    if [[ "${oss[$(_get_os_index)]}" != Debian ]]; then
+    if [[ "$(system_get_os_family)" != Debian ]]; then
         err_out "mysql_install() function is not compatible with non-debian like systems"
         return 1
     fi
@@ -600,7 +698,7 @@ mysql_install(){
 
     echo "mysql-server mysql-server/root_password password $1" | debconf-set-selections
     echo "mysql-server mysql-server/root_password_again password $1" | debconf-set-selections
-    $(system_get_install_command) mysql-server mysql-client
+    $(system_get_install_command) "${MYSQL_PACKS[@]}"
     echo "Sleeping while MySQL starts up for the first time..."
     sleep 5
 }
@@ -668,8 +766,7 @@ $prop = $val"
 
 mysql_tune(){
     # * Tunes MySQL's memory usage to utilize the percentage of memory you specify, defaulting to 40%
-
-    # * `$1` - the percent of system memory to allocate towards MySQL
+    # * `$1` - Optional - the percent of system memory to allocate towards MySQL [40]
 
     PERCENT=${1:-40}
 
@@ -700,7 +797,9 @@ mysql_tune(){
 
 mysql_tune_with_defaults(){
     # * Tune mysql according to linode RAM size
-    mysql_tune
+    # * `$1` - Optional - the percent of system memory to allocate towards MySQL [40]
+    msg_out "Tuning MySQL for LINODE_RAM=$LINODE_RAM with ${1:-40}% system memory allocation"
+    mysql_tune ${1:-40}
     sed -i -e 's/^[[:blank:]]*key_buffer.*/#&/' /etc/mysql/my.cnf
     max_allowed_packet=$((512*(LINODE_RAM/1024)))K
     thread_stack=$((64*(LINODE_RAM/1024)))K
