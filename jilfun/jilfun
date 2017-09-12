@@ -418,12 +418,35 @@ ssh_user_add_pubkey(){
 ssh_disable_root_login(){
     # * Disables root SSH access.
     if sed -i'.bak' 's/PermitRootLogin[[:blank:]][[:blank:]]*yes/PermitRootLogin no/' /etc/ssh/sshd_config; then
-        msg_out "Disabled root login in SSH"
+        msg_out "Disabled root login for SSH"
         return 0
     else
-        err_out "Failed to disable root login in SSH"
+        err_out "Failed to disable root login for SSH"
         return 1
     fi
+}
+
+ssh_disable_password_login(){
+    # * Disable password login through SSH
+    local cf=/etc/ssh/sshd_config
+    if grep -qs -e '^[[:blank:]]*#*PasswordAuthentication' "$cf"; then
+        if sed -i.bak 's/^[[:blank:]]*#*PasswordAuthentication.*/PasswordAuthentication no/' "$cf"; then
+            msg_out "Disabled password login for SSH"
+            return 0
+        else
+            err_out "Failed to disable password login for SSH"
+            return 1
+        fi
+    else
+        if echo "PasswordAuthentication no" | tee -a "$cf" >/dev/null; then
+            msg_out "Disabled password login for SSH"
+            return 0
+        else
+            err_out "Failed to disable password login for SSH"
+            return 1
+        fi
+    fi
+    
 }
 
 ssh_restrict_address_family(){

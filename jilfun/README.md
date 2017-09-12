@@ -125,6 +125,10 @@ The available functions are:
 
 * Disables root SSH access.
 
+## ssh_disable_password_login
+
+* Disable password login through SSH
+
 ## ssh_restrict_address_family
 
 * `$1` - Required - Address family, inet for IPV4 and inet6 of IPV6
