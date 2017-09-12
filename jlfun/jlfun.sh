@@ -622,7 +622,7 @@ mysql_install(){
                 expect {
                     timeout { exp_send_user "\nE: Failed!!!. Timed out.\n"; exit 1}
                     eof {break}
-                    -nocase "*assword*" {
+                    -nocase "*password for user root:*" {
                         exp_send "'"$1"'\r"
                     }
                 }
