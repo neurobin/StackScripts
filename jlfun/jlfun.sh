@@ -652,6 +652,7 @@ apache2_tune(){
 apache2_tune_with_defaults(){
     # * Tune apache2 according to linode ram size
     msg_out "Tuning apache2 for LINODE_RAM=$LINODE_RAM"
+    $(system_get_install_command) apache2-mpm-prefork
     content="
     <IfModule mpm_prefork_module>
         StartServers $((2*(LINODE_RAM/1024)))
