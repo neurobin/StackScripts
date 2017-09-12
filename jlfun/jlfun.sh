@@ -150,6 +150,10 @@ system_update(){
 system_upgrade(){
     # * upgrade the system
     system_update
+    if [[ -f /etc/apt/apt.conf.d/70debconf ]]; then
+        sed -i.bak 's/.*DPkg::Pre-Install-Pkgs.*/#&/' /etc/apt/apt.conf.d/70debconf
+    fi
+    export DEBIAN_FRONTEND=noninteractive
     ${upgrade_command[$(_get_os_index)]}
 }
 
