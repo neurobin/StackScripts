@@ -5,6 +5,26 @@ This is a collection of useful bash functions to be included in other bash Stack
 
 A tiny (experimental) effort is made to support different distros: Debian, Ubuntu, Archlinux, Gentoo, Fedora, Centos, Slackware
 
+```
+################################################################################
+# Overridable environment variables
+# Define these variables before calling any function, if you want to change
+# or customize the respective install/operation.
+################################################################################
+export OSS=                 # Current OS family. (Ubuntu may be specified as Debian) (not an array)
+export INSTALL_COMMAND=     # Package manager install command, e.g apt-get -y install (not an array)
+export UPDATE_COMMAND=      # Package manager update command, e.g apt-get -y update (not an array)
+export UPGRADE_COMMAND=     # Package manager upgrade command, e.g apt-get -y upgrade (not an array)
+export FAIL2BAN_PACKS=()    # Package names that will install fail2ban in the system, e.g (epel-release fail2ban) for Centos
+export SENDMAIL_PACKS=()    # Package names that will install sendmail in the system, e.g (sendmail-bin sendmail) for Debian
+export UFW_PACKS=()         # Package names that will install ufw in the system, e.g (ufw)
+export COMMON_PACKS=(git wget bc tar gzip lzip inxi) # This is an array of commonly used package names
+export APACHE2_PACKS=()     # Can be overriden to customize apache2 install
+export APACHE2_MODULES=(rewrite ssl)            # Apache2 modules to enable
+export MYSQL_PACKS=(mysql-server mysql-client)  # Can be overriden to customize mysql installation
+################################################################################
+```
+
 # Functions
 
 The available functions are:
@@ -43,18 +63,36 @@ The available functions are:
 * Check if a command is available
 * `$1` - Required - command to check
 
+## system_get_install_command
+
+* Get package manager install command
+* Overridable by defining INSTALL_COMMAND environment variable
+
+## system_get_update_command
+
+* Get package manager update command
+* Overridable by defining UPDATE_COMMAND environment variable
+
+## system_get_upgrade_command
+
+* Get package manager upgrade command
+* Overridable by defining UPGRADE_COMMAND environment variable
+
+## system_get_os_family
+
+* Get OS family name
+* Overridable by defining OSS environment variable
+
 ## system_update
 
 * update the system
 * some os may perform total upgrade like archlinux, centos, fedora
+* update command used may be overriden with UPDATE_COMMAND environment variable
 
 ## system_upgrade
 
 * upgrade the system
-
-## system_get_install_command
-
-* get package manager install command
+* upgrade command used may be overriden with UPGRADE_COMMAND environment variable
 
 ## system_get_primary_ip
 
@@ -110,6 +148,11 @@ The available functions are:
 
 * `$1` - Required - Address family, inet for IPV4 and inet6 of IPV6
 
+## fail2ban_get_package_names
+
+* Get the packages names that will install fail2ban
+* Overridable by defining FAIL2BAN_PACKS environment variable
+
 ## fail2ban_start
 
 * start and enable fail2ban
@@ -122,13 +165,18 @@ The available functions are:
 
 * install **fail2ban**
 
-## ufw_restart
+## ufw_get_package_names
 
-* restart ufw
+* Get the packages names that will install ufw
+* Overridable by defining UFW_PACKS environment variable
 
 ## ufw_start
 
 * start and enable ufw
+
+## ufw_restart
+
+* restart ufw
 
 ## ufw_allow_commons
 
@@ -141,10 +189,17 @@ The available functions are:
 ## common_install
 
 * Install some common packages: git, wget, bc, tar, gzip, lzip inxi
+* Overridable by defining COMMON_PACKS environment variable
 
 ## colorful_bash_prompt_install
 
 * Install a colorful bash prompt
+* .bashrc file: https://raw.githubusercontent.com/neurobin/DemoCode/master/bash/.bashrc
+
+## sendmail_get_package_names
+
+* Get the packages names that will install sendmail
+* Overridable by defining SENDMAIL_PACKS environment variable
 
 ## sendmail_start
 
@@ -158,6 +213,11 @@ The available functions are:
 
 * Install and start **sendmail** service
 
+## apache2_get_package_names
+
+* Get the packages names that will install Apache2
+* Overridable by defining APACHE2_PACKS environment variable
+
 ## apache2_start
 
 * start apache2
@@ -169,6 +229,8 @@ The available functions are:
 ## apache2_install
 
 * installs the system default **apache2**
+* Package list overridable by defining APACHE2_PACKS environment variable
+* Module list overridable by defining APACHE2_MODULES environment variable
 
 ## apache2_tune
 
@@ -191,6 +253,7 @@ The available functions are:
 
 * Install **mysql** (Debian/Ubuntu)
 * `$1` - the mysql root password
+* Package list overridable by defining MYSQL_PACKS environment variable
 
 ## mysql_tune_security
 
@@ -200,8 +263,9 @@ The available functions are:
 ## mysql_tune
 
 * Tunes MySQL's memory usage to utilize the percentage of memory you specify, defaulting to 40%
-* `$1` - the percent of system memory to allocate towards MySQL
+* `$1` - Optional - the percent of system memory to allocate towards MySQL [40]
 
 ## mysql_tune_with_defaults
 
 * Tune mysql according to linode RAM size
+* `$1` - Optional - the percent of system memory to allocate towards MySQL [40]

@@ -7,6 +7,26 @@ This is a collection of useful bash functions to be included in other bash Stack
 
 A tiny (experimental) effort is made to support different distros: Debian, Ubuntu, Archlinux, Gentoo, Fedora, Centos, Slackware
 
+```
+################################################################################
+# Overridable environment variables
+# Define these variables before calling any function, if you want to change
+# or customize the respective install/operation.
+################################################################################
+export OSS=                 # Current OS family. (Ubuntu may be specified as Debian) (not an array)
+export INSTALL_COMMAND=     # Package manager install command, e.g 'apt-get -y install' (not an array)
+export UPDATE_COMMAND=      # Package manager update command, e.g 'apt-get -y update' (not an array)
+export UPGRADE_COMMAND=     # Package manager upgrade command, e.g 'apt-get -y upgrade' (not an array)
+export FAIL2BAN_PACKS=()    # Package names that will install fail2ban in the system, e.g (epel-release fail2ban) for Centos
+export SENDMAIL_PACKS=()    # Package names that will install sendmail in the system, e.g (sendmail-bin sendmail) for Debian
+export UFW_PACKS=()         # Package names that will install ufw in the system, e.g (ufw)
+export COMMON_PACKS=(git wget bc tar gzip lzip inxi) # This is an array of commonly used package names
+export APACHE2_PACKS=()     # Can be overriden to customize apache2 install
+export APACHE2_MODULES=(rewrite ssl)            # Apache2 modules to enable
+export MYSQL_PACKS=(mysql-server mysql-client)  # Can be overriden to customize mysql installation
+################################################################################
+```
+
 # Functions
 
 The available functions are:' > README.md

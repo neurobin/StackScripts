@@ -105,6 +105,8 @@ chkcmd(){
 
 ################################################################################
 # Overridable environment variables
+# Define these variables before calling any function, if you want to change
+# or customize the respective install/operation.
 ################################################################################
 export OSS=                 # Current OS family. (Ubuntu may be specified as Debian) (not an array)
 export INSTALL_COMMAND=     # Package manager install command, e.g 'apt-get -y install' (not an array)
@@ -368,7 +370,6 @@ ssh_user_add_pubkey(){
     # * Adds the users public key to authorized_keys for the specified user.
     # * Make sure you wrap your input variables in double quotes, or the key may not load properly.
     #
-    #
     # * `$1` - Required - username
     # * `$2` - Required - public key
     USERNAME="$1"
@@ -518,7 +519,7 @@ ufw_install(){
 
 common_install(){
     # * Install some common packages: git, wget, bc, tar, gzip, lzip inxi
-    # * Overridable by defining COMMON_PACKS environment array variable
+    # * Overridable by defining COMMON_PACKS environment variable
     for pack in "${COMMON_PACKS[@]}"; do
         if $(system_get_install_command) $pack; then
             msg_out "Successfully installed '$pack'"
@@ -588,6 +589,8 @@ sendmail_install(){
 ###############
 
 apache2_get_package_names(){
+    # * Get the packages names that will install Apache2
+    # * Overridable by defining APACHE2_PACKS environment variable
     if [[ -z "$APACHE2_PACKS" ]]; then
         echo "${apache2_packs[$(_get_os_index)]}"
     else
@@ -609,6 +612,8 @@ apache2_restart(){
 
 apache2_install() {
     # * installs the system default **apache2**
+    # * Package list overridable by defining APACHE2_PACKS environment variable
+    # * Module list overridable by defining APACHE2_MODULES environment variable
     $(system_get_install_command) $(apache2_get_package_names)
     if chkcmd a2dissite; then
         a2dissite default || a2dissite 000-default # disable the interfering default virtualhost
@@ -685,6 +690,7 @@ mysql_restart(){
 mysql_install(){
     # * Install **mysql** (Debian/Ubuntu)
     # * `$1` - the mysql root password
+    # * Package list overridable by defining MYSQL_PACKS environment variable
     
     if [[ "$(system_get_os_family)" != Debian ]]; then
         err_out "mysql_install() function is not compatible with non-debian like systems"
