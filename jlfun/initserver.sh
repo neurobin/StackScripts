@@ -15,22 +15,17 @@
 # <UDF name="mysql_install" Label="Install mysql" oneOf="yes,no" default="yes" />
 # <UDF name="mysql_root_password" Label="Root password for mysql" default="" />
 
-source <ssinclude StackScriptID="182722">
-
 mkdir -p /var/cache
 exec &>  >(tee -a /var/cache/initserver.sh.log)
 
+source <ssinclude StackScriptID="182722">
+
 system_upgrade
-
-if [[ "$COLORFUL_BASH_PROMPT_INSTALL" = yes ]]; then
-    colorful_bash_prompt_install
-fi
-
 system_set_hostname "$SYSTEM_HOSTNAME"
 system_add_host_entry 127.0.1.1 "$SYSTEM_HOSTNAME"
 
-if [[ "$COMMON_INSTALL" = yes ]]; then
-    common_install
+if [[ "$COLORFUL_BASH_PROMPT_INSTALL" = yes ]]; then
+    colorful_bash_prompt_install
 fi
 
 user_add_with_sudo "$USER_NAME" "$USER_PASSWORD"
@@ -43,6 +38,10 @@ fi
 
 ssh_restrict_address_family "$SSH_RESTRICT_ADDRESS_FAMILY"
 ssh_restart
+
+if [[ "$COMMON_INSTALL" = yes ]]; then
+    common_install
+fi
 
 if [[ "$FAIL2BAN_INSTALL" = yes ]]; then
     fail2ban_install

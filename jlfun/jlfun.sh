@@ -586,7 +586,7 @@ mysql_restart(){
 }
 
 mysql_install(){
-    # * Install **mysql** and secure it with `mysql_secure_installation` (Debian/Ubuntu)
+    # * Install **mysql** (Debian/Ubuntu)
     # * `$1` - the mysql root password
     
     if [[ "${oss[$(_get_os_index)]}" != Debian ]]; then
@@ -602,33 +602,42 @@ mysql_install(){
     echo "mysql-server mysql-server/root_password password $1" | debconf-set-selections
     echo "mysql-server mysql-server/root_password_again password $1" | debconf-set-selections
     $(system_get_install_command) mysql-server mysql-client
-    
+    msg_out "Sleeping while MySQL starts up for the first time..."
+    sleep 3
+}
+
+mysql_security_tune(){
+    # * Secure MySQL with `mysql_secure_installation`
+    # * `$1` - the mysql root password
     if chkcmd mysql; then
-        msg_out "Sleeping while MySQL starts up for the first time..."
-        sleep 3
-        
         # securing mysql
         if ! chkcmd expect; then
             $(system_get_install_command) expect
         fi
         msg_out "Securing mysql with mysql_secure_installation"
-        expect -c "
-            set timeout -1
-            spawn -noecho mysql_secure_installation --use-default
-            while {1} {
-                expect {
-                    timeout { exp_send_user '\nE: Failed!!!. Timed out.\n'; exit 1}
-                    eof {break}
-                    -nocase \"*password for user root:*\" {
-                        exp_send \"$1\r\"
-                    }
-                }
-            }"
+        
+        tmpf=$(mktemp)
+        echo "#!/usr/bin/expect -f
+        set timeout -1
+        spawn mysql_secure_installation --use-default
+        match_max 100000
+        expect -nocase \"*assword for user root:*\"
+        exp_send -- \"$1\r\"
+        exp_send -- \"\x04\"
+        exp_send -- \"\x04\"
+        exp_send -- \"\x04\"
+        expect eof
+        " > "$tmpf"
+        msg_out "Executing expect script: $tmpf\n"
+        expect "$tmpf"
+        rm -f "$tmpf" &&
+        msg_out "Removed expect script: $tmpf" ||
+        wrn_out "Failed to remove expect script: $tmpf"
+        return 0
     else
         return 1
     fi
 }
-
 
 _insert_prop(){
     prop=$1
@@ -637,18 +646,30 @@ _insert_prop(){
     section_re=$4
     section_raw=$5
     if grep -qs -e "^[[:blank:]]*$prop[[:blank:]]*=[[:blank:]]*" "$file"; then
-        sed -i.bak "s/\(^[[:blank:]]*$prop[[:blank:]]*=[[:blank:]]*\).*/\1$val/" "$file" &&
-        msg_out "Successfully inserted '$prop = $val' in $file" ||
-        err_out "Failed to insert '$prop = $val' in $file"
+        if sed -i.bak "s/\(^[[:blank:]]*$prop[[:blank:]]*=[[:blank:]]*\).*/\1$val/" "$file"; then
+            msg_out "Successfully inserted '$prop = $val' in $file"
+            return 0
+        else
+            err_out "Failed to insert '$prop = $val' in $file"
+            return 1
+        fi
     elif grep -qs -e "^[[:blank:]]*$section_re[[:blank:]]*"; then
-        sed -i.bak "s/^[[:blank:]]*$section_re[[:blank:]]*.*/&\n$prop = $val/" "$file" &&
-        msg_out "Successfully inserted '$prop = $val' in $file" ||
-        err_out "Failed to insert '$prop = $val' in $file"
+        if sed -i.bak "s/^[[:blank:]]*$section_re[[:blank:]]*.*/&\n$prop = $val/" "$file"; then
+            msg_out "Successfully inserted '$prop = $val' in $file"
+            return 0
+        else
+            err_out "Failed to insert '$prop = $val' in $file"
+            return 1
+        fi
     else
-        cat >> "$file" <<< "$section_raw
-$prop = $val" &&
-        msg_out "Successfully inserted '$prop = $val' in $file" ||
-        err_out "Failed to insert '$prop = $val' in $file"
+        if cat >> "$file" <<< "$section_raw
+$prop = $val"; then
+            msg_out "Successfully inserted '$prop = $val' in $file"
+            return 0
+        else
+            err_out "Failed to insert '$prop = $val' in $file"
+            return 1
+        fi
     fi
 }
 

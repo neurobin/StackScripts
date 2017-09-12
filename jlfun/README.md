@@ -189,7 +189,12 @@ The available functions are:
 
 ## mysql_install
 
-* Install **mysql** and secure it with `mysql_secure_installation` (Debian/Ubuntu)
+* Install **mysql** (Debian/Ubuntu)
+* `$1` - the mysql root password
+
+## mysql_security_tune
+
+* Secure MySQL with `mysql_secure_installation`
 * `$1` - the mysql root password
 
 ## mysql_tune
