@@ -71,14 +71,14 @@ if [[ "$SENDMAIL_INSTALL" = yes ]]; then
 fi
 
 if [[ "$APACHE2_INSTALL" = yes ]]; then
-    apache2_install
-    apache2_tune_with_defaults
+    apache2_install &&
+    apache2_tune_with_defaults &&
     apache2_restart
 fi
 
 if [[ "$MYSQL_INSTALL" = yes ]]; then
-    mysql_install "$MYSQL_ROOT_PASSWORD"
-    mysql_tune_security "$MYSQL_ROOT_PASSWORD"
-    mysql_tune_with_defaults
+    mysql_install "$MYSQL_ROOT_PASSWORD" &&
+    mysql_tune_security "$MYSQL_ROOT_PASSWORD" &&
+    mysql_tune_with_defaults &&
     mysql_restart
 fi
