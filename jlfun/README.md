@@ -219,7 +219,13 @@ The available functions are:
 
 ## apache2_tune_with_defaults
 
-* Tune apache2 according to linode ram size
+* Tune apache2 according to linode RAM size
+* `$1` - the percent of system memory to allocate towards Apache (40)
+
+## mysql_get_package_names
+
+* Get the packages names that will install Apache2
+* Overridable by defining APACHE2_PACKS environment variable
 
 ## mysql_start
 

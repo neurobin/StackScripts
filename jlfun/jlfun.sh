@@ -118,41 +118,45 @@ export UFW_PACKS=()         # Package names that will install ufw in the system,
 export COMMON_PACKS=(git wget bc tar gzip lzip inxi) # This is an array of commonly used package names
 export APACHE2_PACKS=()     # Can be overriden to customize apache2 install
 export APACHE2_MODULES=(rewrite ssl)            # Apache2 modules to enable
-export MYSQL_PACKS=(mysql-server mysql-client)  # Can be overriden to customize mysql installation
+export MYSQL_PACKS=()       # Can be overriden to customize mysql installation
 ################################################################################
 
 ################################################################################
 # Compatibility layer
 ################################################################################
 
-oss=(Unknown Debian Centos Fedora Archlinux Gentoo Slackware)
-install_command=('false' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S --noconfirm' 'emerge' 'slackpkg install')
-update_command=('false' 'apt-get update' 'yum -y update' 'dnf -y upgrade' 'pacman -Syu --noconfirm' 'emaint sync' 'slackpkg update')
-upgrade_command=('false' 'apt-get -y dist-upgrade' 'true' 'true' 'true' 'emerge --uDN @world' 'slackpkg upgrade-all')
-fail2ban_packs=('false' 'fail2ban' 'epel-release fail2ban' 'fail2ban' 'fail2ban' 'fail2ban' 'fail2ban')
-sendmail_packs=('false' 'sendmail-bin sendmail' 'epel-release sendmail' 'sendmail' 'sendmail' 'sendmail' 'sendmail')
-ufw_packs=('false' 'ufw' 'ufw' 'ufw' 'ufw' 'ufw' 'ufw')
-apache2_packs=('false' 'apache2' 'apache2' 'apache2' 'apache2' 'apache2' 'apache2')
+oss=(Unknown Ubuntu Debian Centos Fedora Archlinux Gentoo Slackware)
+install_command=('false' 'apt-get install -y' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S --noconfirm' 'emerge' 'slackpkg install')
+update_command=('false' 'apt-get update' 'apt-get update' 'yum -y update' 'dnf -y upgrade' 'pacman -Syu --noconfirm' 'emaint sync' 'slackpkg update')
+upgrade_command=('false' 'apt-get -y dist-upgrade' 'apt-get -y dist-upgrade' 'true' 'true' 'true' 'emerge --uDN @world' 'slackpkg upgrade-all')
+fail2ban_packs=('false' 'fail2ban' 'fail2ban' 'epel-release fail2ban' 'fail2ban' 'fail2ban' 'fail2ban' 'fail2ban')
+sendmail_packs=('false' 'sendmail-bin sendmail' 'sendmail-bin sendmail' 'epel-release sendmail' 'sendmail' 'sendmail' 'sendmail' 'sendmail')
+ufw_packs=('false' 'ufw' 'ufw' 'ufw' 'ufw' 'ufw' 'ufw' 'ufw')
+apache2_packs=('false' 'apache2' 'apache2' 'httpd' 'apache2' 'apache' 'apache2' 'apache2')
+mysql_packs=('false' 'mysql-server mysql-client' 'mariadb-server' 'mariadb-server' 'mysql-server mysql-client' 'mariadb mariadb-clients libmariadbclient' 'mysql-server mysql-client' 'mysql-server mysql-client')
 
 _get_os_index(){
-    if chkcmd apt-get; then
-        # Debian
+    if chkcmd apt-get && [[ $(lsb_release -i |cut -f2) = Ubuntu ]]; then
+        # Ubuntu
         echo 1
+    elif chkcmd apt-get; then
+        # Debian
+        echo 2
     elif chkcmd yum; then
         # Centos
-        echo 2
+        echo 3
     elif chkcmd dnf; then
         # Fedora
-        echo 3
+        echo 4
     elif chkcmd pacman; then
         # Archlinux
-        echo 4
+        echo 5
     elif chkcmd emaint; then
         # Gentoo
-        echo 5
+        echo 6
     elif chkcmd slackpkg; then
         # Slackware
-        echo 6
+        echo 7
     else
         echo 0
     fi
@@ -641,6 +645,8 @@ apache2_tune(){
     PERCENT=${1:-40}
 
     $(system_get_install_command) apache2-mpm-prefork
+    a2dismod mpm_event
+    a2enmod mpm_prefork
     
     PERPROCMEM=10 # the amount of memory in MB each apache process is likely to utilize
     MEM=$(grep MemTotal /proc/meminfo | awk '{ print int($2/1024) }') # how much memory in MB this system has
@@ -650,9 +656,10 @@ apache2_tune(){
 }
 
 apache2_tune_with_defaults(){
-    # * Tune apache2 according to linode ram size
+    # * Tune apache2 according to linode RAM size
+    # * `$1` - the percent of system memory to allocate towards Apache (40)
     msg_out "Tuning apache2 for LINODE_RAM=$LINODE_RAM"
-    $(system_get_install_command) apache2-mpm-prefork
+    apache2_tune ${1:-40}
     content="
     <IfModule mpm_prefork_module>
         StartServers $((2*(LINODE_RAM/1024)))
@@ -676,6 +683,16 @@ apache2_tune_with_defaults(){
 # mysql
 ###########################################################
 
+mysql_get_package_names(){
+    # * Get the packages names that will install Apache2
+    # * Overridable by defining APACHE2_PACKS environment variable
+    if [[ -z "$MYSQL_PACKS" ]]; then
+        echo "${mysql_packs[$(_get_os_index)]}"
+    else
+        echo "${MYSQL_PACKS[@]}"
+    fi
+}
+
 mysql_start(){
     # * start mysql service
     systemctl start mysql ||
@@ -693,7 +710,7 @@ mysql_install(){
     # * `$1` - the mysql root password
     # * Package list overridable by defining MYSQL_PACKS environment variable
     
-    if [[ "$(system_get_os_family)" != Debian ]]; then
+    if [[ "$(system_get_os_family)" != Debian ]] || [[ "$(system_get_os_family)" != Ubuntu ]]; then
         err_out "mysql_install() function is not compatible with non-debian like systems"
         return 1
     fi
@@ -705,9 +722,14 @@ mysql_install(){
 
     echo "mysql-server mysql-server/root_password password $1" | debconf-set-selections
     echo "mysql-server mysql-server/root_password_again password $1" | debconf-set-selections
-    $(system_get_install_command) "${MYSQL_PACKS[@]}"
+    $(system_get_install_command) $(mysql_get_package_names)
     echo "Sleeping while MySQL starts up for the first time..."
     sleep 5
+    if chkcmd mysql; then
+        return 0
+    else
+        return 1;
+    fi
 }
 
 mysql_tune_security(){
