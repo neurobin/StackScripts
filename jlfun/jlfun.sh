@@ -217,7 +217,16 @@ system_upgrade(){
     # * upgrade the system
     # * upgrade command used may be overriden with UPGRADE_COMMAND environment variable
     system_update
-    $(system_get_upgrade_command)
+    $(system_get_install_command) expect
+    expect <<EOF
+    #!/usr/bin/expect -f
+    set timeout -1
+    spawn $(system_get_upgrade_command)
+    match_max 100000
+    expect -nocase "*A new version*of configuration file*is available, but the version*installed currently*has*been locally modified*What do you want to do about modified configuration file*keep the local version currently installed*"
+    exp_send -- "\r"
+    expect eof
+EOF
 }
 
 system_get_primary_ip() {
