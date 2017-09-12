@@ -21,9 +21,20 @@ mkdir -p /var/cache
 exec &>  >(tee -a /var/cache/initserver.sh.log)
 
 system_upgrade
+
+if [[ "$COLORFUL_BASH_PROMPT_INSTALL" = yes ]]; then
+    colorful_bash_prompt_install
+fi
+
 system_set_hostname "$SYSTEM_HOSTNAME"
 system_add_host_entry 127.0.1.1 "$SYSTEM_HOSTNAME"
+
+if [[ "$COMMON_INSTALL" = yes ]]; then
+    common_install
+fi
+
 user_add_with_sudo "$USER_NAME" "$USER_PASSWORD"
+
 ssh_user_add_pubkey "$SSH_USER" "$SSH_PUBKEY"
 
 if [[ "$SSH_DISABLE_ROOT_LOGIN" = yes ]]; then
@@ -39,14 +50,6 @@ fi
 
 if [[ "$UFW_INSTALL" = yes ]]; then
     ufw_install
-fi
-
-if [[ "$COMMON_INSTALL" = yes ]]; then
-    common_install
-fi
-
-if [[ "$COLORFUL_BASH_PROMPT_INSTALL" = yes ]]; then
-    colorful_bash_prompt_install
 fi
 
 if [[ "$SENDMAIL_INSTALL" = yes ]]; then
