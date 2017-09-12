@@ -6,8 +6,8 @@
 # <UDF name="user_shell" Label="Default SHELL for standard user" default="/bin/bash" example="/full/path/to/shell" />
 # <UDF name="ssh_user" Label="SSH user" example="user" default="" />
 # <UDF name="ssh_pubkey" Label="SSH public key" default="" />
-# <UDF name="ssh_disable_root_login" Label="Disable root login for SSH" oneOf="yes,no" default="yes" />
 # <UDF name="ssh_disable_password_login" Label="Disable password login for SSH" oneOf="yes,no" default="yes" />
+# <UDF name="ssh_disable_root_login" Label="Disable root login for SSH" oneOf="yes,no" default="yes" />
 # <UDF name="ssh_restrict_address_family" Label="Restrict SSH AddressFamily" oneOf="inet,inet6" default="inet" />
 # <UDF name="fail2ban_install" Label="Install fail2ban" oneOf="yes,no" default="yes" />
 # <UDF name="ufw_install" Label="Install UFW firewall" oneOf="yes,no" default="yes" />
