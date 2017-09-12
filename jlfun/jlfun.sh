@@ -609,34 +609,28 @@ mysql_install(){
 mysql_security_tune(){
     # * Secure MySQL with `mysql_secure_installation`
     # * `$1` - the mysql root password
-    if chkcmd mysql; then
-        # securing mysql
-        if ! chkcmd expect; then
-            $(system_get_install_command) expect
-        fi
-        msg_out "Securing mysql with mysql_secure_installation"
-        
-        tmpf=$(mktemp)
-        echo "#!/usr/bin/expect -f
-        set timeout -1
-        spawn mysql_secure_installation --use-default
-        match_max 100000
-        expect -nocase \"*assword for user root:*\"
-        exp_send -- \"$1\r\"
-        exp_send -- \"\x04\"
-        exp_send -- \"\x04\"
-        exp_send -- \"\x04\"
-        expect eof
-        " > "$tmpf"
-        msg_out "Executing expect script: $tmpf\n"
-        expect "$tmpf"
-        rm -f "$tmpf" &&
-        msg_out "Removed expect script: $tmpf" ||
-        wrn_out "Failed to remove expect script: $tmpf"
-        return 0
-    else
-        return 1
+    if ! chkcmd expect; then
+        $(system_get_install_command) expect
     fi
+    msg_out "Securing mysql with mysql_secure_installation"
+    
+    tmpf=$(mktemp)
+    echo "#!/usr/bin/expect -f
+    set timeout -1
+    spawn mysql_secure_installation --use-default
+    match_max 100000
+    expect -nocase \"*assword for user root:*\"
+    exp_send -- \"$1\r\"
+    exp_send -- \"\x04\"
+    exp_send -- \"\x04\"
+    exp_send -- \"\x04\"
+    expect eof
+    " > "$tmpf"
+    msg_out "Executing expect script: $tmpf\n"
+    expect "$tmpf"
+    rm -f "$tmpf" &&
+    msg_out "Removed expect script: $tmpf" ||
+    wrn_out "Failed to remove expect script: $tmpf"
 }
 
 _insert_prop(){
