@@ -1,4 +1,3 @@
-
 This script does not do anything on its own. Does not deploy directly.
 
 This is a collection of useful bash functions to be included in other bash StackScripts with a `source <ssinclude StackScriptID=182722>` line.
