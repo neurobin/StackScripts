@@ -28,7 +28,6 @@ if [[ "$COLORFUL_BASH_PROMPT_INSTALL" = yes ]]; then
     colorful_bash_prompt_install
 fi
 
-$(system_get_install_command) bash
 user_add_with_sudo "$USER_NAME" "$USER_PASSWORD" /bin/bash
 
 ssh_user_add_pubkey "$SSH_USER" "$SSH_PUBKEY"
