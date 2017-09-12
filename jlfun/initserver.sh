@@ -63,7 +63,7 @@ fi
 
 if [[ "$MYSQL_INSTALL" = yes ]]; then
     mysql_install "$MYSQL_ROOT_PASSWORD" &&
+    mysql_tune_security "$MYSQL_ROOT_PASSWORD" &&
     mysql_tune_with_defaults &&
-    mysql_security_tune &&
     mysql_restart
 fi

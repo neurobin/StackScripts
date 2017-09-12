@@ -595,42 +595,41 @@ mysql_install(){
     fi
     
     if [ ! -n "$1" ]; then
-        echo "mysql_install() requires the root pass as its first argument"
+        err_out "mysql_install() requires the root pass as its first argument"
         return 1;
     fi
 
     echo "mysql-server mysql-server/root_password password $1" | debconf-set-selections
     echo "mysql-server mysql-server/root_password_again password $1" | debconf-set-selections
     $(system_get_install_command) mysql-server mysql-client
-    msg_out "Sleeping while MySQL starts up for the first time..."
-    sleep 3
+    echo "Sleeping while MySQL starts up for the first time..."
+    sleep 5
 }
 
-mysql_security_tune(){
+mysql_tune_security(){
     # * Secure MySQL with `mysql_secure_installation`
     # * `$1` - the mysql root password
+    
+    if [ ! -n "$1" ]; then
+        err_out "mysql_tune_security() requires the root pass as its first argument"
+        return 1;
+    fi
+    
     if ! chkcmd expect; then
         $(system_get_install_command) expect
     fi
-    msg_out "Securing mysql with mysql_secure_installation"
+    msg_out "Securing mysql with mysql_secure_installation\n"
     
     tmpf=$(mktemp)
-    echo "#!/usr/bin/expect -f
+    expect <<EOF
+    #!/usr/bin/expect -f
     set timeout -1
     spawn mysql_secure_installation --use-default
     match_max 100000
-    expect -nocase \"*assword for user root:*\"
-    exp_send -- \"$1\r\"
-    exp_send -- \"\x04\"
-    exp_send -- \"\x04\"
-    exp_send -- \"\x04\"
+    expect -nocase "*assword for user root:*"
+    exp_send -- "$1\r"
     expect eof
-    " > "$tmpf"
-    msg_out "Executing expect script: $tmpf\n"
-    expect "$tmpf"
-    rm -f "$tmpf" &&
-    msg_out "Removed expect script: $tmpf" ||
-    wrn_out "Failed to remove expect script: $tmpf"
+EOF
 }
 
 _insert_prop(){
@@ -641,27 +640,28 @@ _insert_prop(){
     section_raw=$5
     if grep -qs -e "^[[:blank:]]*$prop[[:blank:]]*=[[:blank:]]*" "$file"; then
         if sed -i.bak "s/\(^[[:blank:]]*$prop[[:blank:]]*=[[:blank:]]*\).*/\1$val/" "$file"; then
-            msg_out "Successfully inserted '$prop = $val' in $file"
+            msg_out "Successfully updated '$prop = $val' in $file"
             return 0
         else
-            err_out "Failed to insert '$prop = $val' in $file"
+            err_out "Failed to update '$prop = $val' in $file"
             return 1
         fi
-    elif grep -qs -e "^[[:blank:]]*$section_re[[:blank:]]*"; then
+    elif grep -qs -e "^[[:blank:]]*$section_re[[:blank:]]*" "$file"; then
         if sed -i.bak "s/^[[:blank:]]*$section_re[[:blank:]]*.*/&\n$prop = $val/" "$file"; then
-            msg_out "Successfully inserted '$prop = $val' in $file"
+            msg_out "Successfully added '$prop = $val in section $section_raw in file $file"
             return 0
         else
-            err_out "Failed to insert '$prop = $val' in $file"
+            err_out "Failed to add '$prop = $val' in section $section_raw in file $file"
             return 1
         fi
     else
-        if cat >> "$file" <<< "$section_raw
-$prop = $val"; then
-            msg_out "Successfully inserted '$prop = $val' in $file"
+        cont="$section_raw
+$prop = $val"
+        if echo "$cont" | tee -a "$file"; then
+            msg_out "Successfully inserted '$cont' in $file"
             return 0
         else
-            err_out "Failed to insert '$prop = $val' in $file"
+            err_out "Failed to insert '$cont' in $file"
             return 1
         fi
     fi
