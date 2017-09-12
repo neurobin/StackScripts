@@ -28,7 +28,8 @@ if [[ "$COLORFUL_BASH_PROMPT_INSTALL" = yes ]]; then
     colorful_bash_prompt_install
 fi
 
-user_add_with_sudo "$USER_NAME" "$USER_PASSWORD"
+$(system_get_install_command) bash
+user_add_with_sudo "$USER_NAME" "$USER_PASSWORD" /bin/bash
 
 ssh_user_add_pubkey "$SSH_USER" "$SSH_PUBKEY"
 
@@ -56,14 +57,14 @@ if [[ "$SENDMAIL_INSTALL" = yes ]]; then
 fi
 
 if [[ "$APACHE2_INSTALL" = yes ]]; then
-    apache2_install &&
-    apache2_tune_with_defaults &&
+    apache2_install
+    apache2_tune_with_defaults
     apache2_restart
 fi
 
 if [[ "$MYSQL_INSTALL" = yes ]]; then
-    mysql_install "$MYSQL_ROOT_PASSWORD" &&
-    mysql_tune_security "$MYSQL_ROOT_PASSWORD" &&
-    mysql_tune_with_defaults &&
+    mysql_install "$MYSQL_ROOT_PASSWORD"
+    mysql_tune_security "$MYSQL_ROOT_PASSWORD"
+    mysql_tune_with_defaults
     mysql_restart
 fi

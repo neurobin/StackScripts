@@ -248,7 +248,6 @@ user_add_with_sudo(){
     
     if [[ "$USERSHELL" != '' ]]; then
         usermod_opts=(-s "$USERSHELL")
-        $(system_get_install_command) "$USERSHELL"
     fi
     
     $(system_get_install_command) sudo
