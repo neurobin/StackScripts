@@ -247,14 +247,14 @@ user_add_with_sudo(){
     fi
     
     if [[ "$USERSHELL" != '' ]]; then
-        usermod_opts=(-s "$USERSHELL")
+        usermod_opts="-s '$USERSHELL'"
     fi
     
     $(system_get_install_command) sudo
     $(system_get_install_command) adduser
     
     #adduser "$USERNAME" --disabled-password --gecos ""
-    useradd -m "$USERNAME" "${usermod_opts[@]}" &&
+    useradd -m "$USERNAME" ${usermod_opts} &&
     msg_out "Added user $USERNAME" ||
     err_out "Failed to add user $USERNAME"
     
