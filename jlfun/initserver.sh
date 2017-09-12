@@ -1,9 +1,9 @@
 #!/bin/bash
-# <UDF name="system_hostname" Label="System hostname" example="JLFUN" />
-# <UDF name="user_name" Label="Standard username" example="user" />
-# <UDF name="user_password" Label="Password for standard user" />
-# <UDF name="ssh_user" Label="SSH user" example="user" />
-# <UDF name="ssh_pubkey" Label="SSH public key" />
+# <UDF name="system_hostname" Label="System hostname" example="JLFUN" default="" />
+# <UDF name="user_name" Label="Standard username" example="user" default="" />
+# <UDF name="user_password" Label="Password for standard user" default="" />
+# <UDF name="ssh_user" Label="SSH user" example="user" default="" />
+# <UDF name="ssh_pubkey" Label="SSH public key" default="" />
 # <UDF name="ssh_disable_root_login" Label="Disable root login in SSH" oneOf="yes,no" default="yes" />
 # <UDF name="ssh_restrict_address_family" Label="Restrict SSH AddressFamily" oneOf="inet,inet6" default="inet" />
 # <UDF name="fail2ban_install" Label="Install fail2ban" oneOf="yes,no" default="yes" />
@@ -13,7 +13,7 @@
 # <UDF name="sendmail_install" Label="Install sendmail" oneOf="yes,no" default="yes" />
 # <UDF name="apache2_install" Label="Install apache2 webserver" oneOf="yes,no" default="yes" />
 # <UDF name="mysql_install" Label="Install mysql" oneOf="yes,no" default="yes" />
-# <UDF name="mysql_root_password" Label="Root password for mysql" />
+# <UDF name="mysql_root_password" Label="Root password for mysql" default="" />
 
 source <ssinclude StackScriptID="182722">
 

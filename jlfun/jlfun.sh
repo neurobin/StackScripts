@@ -107,9 +107,9 @@ chkcmd(){
 ################################################################################
 
 oss=(Unknown Debian Centos Fedora Archlinux Gentoo Slackware)
-install_command=('false' 'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --force-yes -y' 'yum install -y' 'dnf -y install' 'pacman -S' 'emerge' 'slackpkg install')
+install_command=('false' 'apt-get install -y' 'yum install -y' 'dnf -y install' 'pacman -S' 'emerge' 'slackpkg install')
 update_command=('false' 'apt-get update' 'yum -y update' 'dnf -y upgrade' 'pacman -Syu' 'emaint sync' 'slackpkg update')
-upgrade_command=('false' 'apt-get upgrade -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --force-yes -y' 'true' 'true' 'true' 'emerge --uDN @world' 'slackpkg upgrade-all')
+upgrade_command=('false' 'apt-get dist-upgrade -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y' 'true' 'true' 'true' 'emerge --uDN @world' 'slackpkg upgrade-all')
 fail2ban_packs=('false' 'fail2ban sendmail-bin sendmail' 'epel-release fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail' 'fail2ban sendmail')
 sendmail_packs=('false' 'sendmail-bin sendmail' 'epel-release sendmail' 'sendmail' 'sendmail' 'sendmail' 'sendmail')
 
@@ -150,7 +150,7 @@ system_update(){
 system_upgrade(){
     # * upgrade the system
     system_update
-    DEBIAN_FRONTEND=noninteractive ${upgrade_command[$(_get_os_index)]}
+    ${upgrade_command[$(_get_os_index)]}
 }
 
 system_get_install_command(){
