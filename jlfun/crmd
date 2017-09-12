@@ -7,6 +7,8 @@ This is a collection of useful bash functions to be included in other bash Stack
 
 A tiny (experimental) effort is made to support different distros: Debian, Ubuntu, Archlinux, Gentoo, Fedora, Centos, Slackware
 
+Apache2 and MySQL related functions are only for Ubuntu (may work in Debian too)
+
 # Functions
 
 The available functions are:' > README.md
